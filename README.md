@@ -90,3 +90,13 @@ Completed runs with at least three successful landings show only HUGIN's 20-seco
 The model is copied from `SentryTowers_A6/assets/game-ready/hugin_launchpad_d0_game.glb` (39,731 triangles), retaining its animation and attribution under the model reuse notice. Three.js 0.180.0 and the GLTF loader are vendored in `landing/vendor/three/`, with their MIT license. All published asset paths are relative; no localhost or CDN dependency is needed by the game.
 
 `tests/recovery.py` checks the 2/3/6 recovery threshold, actual animation, mobile layout, and replay. Publish the repository root with GitHub Pages; `index.html` redirects to the game.
+
+## Experimental Fleet / Manual Override mode
+
+Classic remains the default. Choose Fleet on the controls splash or open `landing/?mode=fleet`. Fleet uses a fresh seed on each replay; append `&seed=7` to repeat a scenario. All six vehicles descend concurrently. Five arrival slots cluster around 19–32 seconds with randomized unit order; H-05 arrives around 46–52 seconds. One of the early units loses its landing module and becomes player-controlled. The remaining four healthy autopilots independently succeed with 90% probability. They use scripted descent trajectories; failures cut thrust and jam landing legs before physical impact. The player's vehicle uses the same manual flight physics as Classic.
+
+A successful first manual landing offers nine seconds to take over H-05, provided it remains airborne. Decline or let the offer expire to leave its 50% automatic recovery chance in effect. Acceptance transfers its current position and velocity to manual physics. The fleet continues during the offer; Esc pauses everything. The orange CRT notices and fleet status strip identify current control and outcomes. Runs conclude after all six contacts and wreck settling.
+
+Both modes play `handoff.mp3` (user-supplied `yodguard-warning_low-2-540185.mp3`) when the arrival cinematic ends and manual control begins, including reduced-motion and skipped-arrival paths. Fleet additionally plays a two-second excerpt of `alarm.mp3` (`freesound_community-sci-fi-warning-alert-29632.mp3`) at the initial failure and damaged-module offer. Burn audio still follows manual thrust only. All sounds share the existing muffling, mute, pause, and disposal behavior.
+
+Validation: `node tests/fleet.mjs` checks complete runs, deterministic seeds, successful second rescue, no-offer after failure, offer expiry, and 100 seeded unattended fleets. `tests/fleet-browser.py` exercises the real UI, both warning clips, takeover, pause, completion and replay.

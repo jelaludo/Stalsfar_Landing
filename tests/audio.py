@@ -16,16 +16,17 @@ with sync_playwright() as p:
  page.get_by_role('button',name='BEGIN DESCENT').click()
  page.wait_for_function("audioContexts[0].state==='running'")
  page.clock.run_for(200)
- assert page.evaluate('audioStarts.length')==0
+ page.wait_for_function('audioStarts.some(d=>d<26)')
+ assert page.evaluate('audioStarts.filter(d=>d>26).length')==0
  page.keyboard.down('Space');page.clock.run_for(200)
- page.wait_for_function('audioStarts.length>0')
+ page.wait_for_function('audioStarts.some(d=>d>26)')
  page.keyboard.up('Space');page.clock.run_for(50)
  assert page.evaluate('audioStops')>0
  count=page.evaluate('audioStarts.length')
  page.clock.run_for(200);assert page.evaluate('audioStarts.length')==count
  page.keyboard.down('Space');page.clock.run_for(100)
  page.wait_for_function(f'audioStarts.length>{count}')
- assert page.evaluate('audioStarts[0]>26 && audioStarts[0]<27')
+ assert page.evaluate('audioStarts.some(d=>d>26 && d<27)')
  page.keyboard.press('Escape');page.wait_for_function("audioContexts[0].state==='suspended'")
  page.keyboard.press('Escape');page.wait_for_function("audioContexts[0].state==='running'")
  page.keyboard.up('Space')

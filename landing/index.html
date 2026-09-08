@@ -10,7 +10,7 @@ async function begin(){
  recoveryAbort?.abort();
  document.querySelector('.summary')?.remove();
  const params=new URLSearchParams(location.search);
- const result=await runLandingIntro(canvas,{seed:params.get('seed')||20260907,entries:6});
+ const result=await runLandingIntro(canvas,{seed:params.get('seed')||(params.get('mode')==='fleet'?crypto.getRandomValues(new Uint32Array(1))[0]:20260907),mode:params.get('mode')||'classic',entries:6});
  const panel=document.createElement('main');panel.className='summary';
  const celebration=result.status==='completed'&&result.survivors>=3;
  panel.classList.toggle('has-recovery',celebration);
