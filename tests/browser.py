@@ -6,7 +6,7 @@ with sync_playwright() as p:
  b=p.chromium.launch(headless=True)
  errors=[]
  def scene(**kwargs):
-  page=b.new_page(**kwargs);page.on('pageerror',lambda e:errors.append(str(e)))
+  page=b.new_page(service_workers='block',**kwargs);page.on('pageerror',lambda e:errors.append(str(e)))
   page.clock.install();page.goto('http://127.0.0.1:8001/landing/?mode=classic');return page
  def ready(page):
   if page.locator('.cockpit').get_attribute('data-phase')=='opening':
@@ -50,14 +50,15 @@ with sync_playwright() as p:
  result=json.loads(page.locator('pre').text_content());assert result['status']=='skipped' and result['resources']['crew']==4
  mobile=scene(viewport={'width':390,'height':844},is_mobile=True,has_touch=True,device_scale_factor=2)
  ready(mobile);mobile.screenshot(path='/tmp/stalsfar-mobile-controls.png');start(mobile)
- cdp=mobile.context.new_cdp_session(mobile);burn=mobile.locator('[data-hold="thrust"]').bounding_box();rotate=mobile.locator('[data-hold="right"]').bounding_box()
- points=[{'x':r['x']+r['width']/2,'y':r['y']+r['height']/2,'id':i} for i,r in enumerate([burn,rotate])]
- cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':points});mobile.clock.run_for(900)
+ cdp=mobile.context.new_cdp_session(mobile);burn=mobile.locator('.thumb-boost').bounding_box()
+ points=[{'x':burn['x']+burn['width']/2,'y':burn['y']+burn['height']/2,'id':0},{'x':75,'y':400,'id':1}]
+ cdp.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':points});points[1]['x']=115
+ cdp.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':points});mobile.clock.run_for(900)
  cdp.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]});mobile.clock.run_for(500)
  assert float(mobile.locator('[data-read="fuel"]').inner_text())<13.5
  mobile.screenshot(path='/tmp/stalsfar-mobile-flight.png');assert mobile.evaluate('document.documentElement.scrollWidth<=innerWidth')
  # Missing sprites and reduced motion: immediately readable splash, no camera cinematic.
- fallback=b.new_page(viewport={'width':1000,'height':800},reduced_motion='reduce')
+ fallback=b.new_page(service_workers='block',viewport={'width':1000,'height':800},reduced_motion='reduce')
  fallback.on('pageerror',lambda e:errors.append(str(e)));fallback.route('**/assets/**',lambda r:r.abort())
  fallback.clock.install();fallback.goto('http://127.0.0.1:8001/landing/?mode=classic')
  assert fallback.locator('.cockpit').get_attribute('data-phase')=='ready'

@@ -2,7 +2,7 @@
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
  b=p.chromium.launch(headless=True)
- page=b.new_page(reduced_motion='reduce');errors=[]
+ page=b.new_page(service_workers='block',reduced_motion='reduce');errors=[]
  page.on('pageerror',lambda e:errors.append(str(e)))
  page.add_init_script('''window.audioContexts=[];window.audioStarts=[];
  const Original=window.AudioContext;

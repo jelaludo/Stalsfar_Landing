@@ -108,3 +108,13 @@ Both modes use the user-supplied `yodguard-warning_low-2-540185.mp3` (`handoff.m
 `node tests/fleet.mjs` checks complete/deterministic runs, optional rescue, probability outcomes, smooth braking, hidden initial assignment, all six possible failures, and nearby touchdowns on both sides of the player. `tests/fleet-browser.py` checks observation, CRT/audio handoff, takeover, pause, completion and replay.
 
 Fleet 05 accelerates the atmospheric establishing shot to about 1.2 seconds, followed by an early controller failure. Entry sink speed is 1.7 × height / arrival time (roughly 30–40 m/s). Five vehicles have modest diagonal drift, with one vertical approach. Plasma expires 2.8 seconds into flight and does not restart on takeover. Automatic touchdowns cluster around the manual landing, with the optional final unit a few seconds behind.
+
+## Mobile app / Fleet 06
+
+The briefing uses a viewport-contained layout with its own scroll area and a permanently visible Begin Descent footer. Touch devices use a floating left-thumb stick: touch any non-button area on the left half of the playfield and drag horizontally for proportional steering. A separate right-thumb BOOST button supports simultaneous touch and cuts on release. Touch cancellation, pause, blur, orientation changes, takeover and cleanup reset the controls. Keyboard controls remain available.
+
+The mobile HUD retains altitude, sink rate and fuel; sectors are shown on demand. Portrait and landscape layouts respect safe-area insets. Automatic legs remain enabled by default, with a LEGS control available. Landscape leaves the centre open and places boost/tools to the right.
+
+Use INSTALL APP on the briefing. Supported browsers show their native install prompt; Safari receives Add to Home Screen instructions. The app manifest supplies standalone presentation and 192/512 px maskable icons plus an Apple touch icon. A root-scoped service worker precaches the complete game, including audio and the 3D recovery model, for offline play after the first successful online cache fill. Updates wait until the player chooses UPDATE READY · RELOAD on the briefing; active flights are not automatically reloaded.
+
+For future releases, bump the cache version in `sw.js` and refresh its ASSETS list when adding/removing runtime files. All requests are scoped to this repository's URL. Only this app's old caches are removed. Verification: `tests/mobile-pwa.py` checks short-window CTA visibility, portrait/landscape layouts, real simultaneous touch input, independent release, pause reset, asset caching and offline startup. Browser emulation does not substitute for a physical iOS/Android device check.

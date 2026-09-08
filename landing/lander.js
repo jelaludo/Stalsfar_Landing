@@ -1,5 +1,6 @@
+import { createTouchPilot } from './touch-pilot.js';
 import { createLandingAudio } from './audio.js';
-import { createFleetDirector } from './fleet.js?v=hectic05';
+import { createFleetDirector } from './fleet.js?v=hectic06';
 import { createLaunchPlume } from './launch-plume.js';
 // Six Down — a standalone 2D landing experiment. Model by jelaludo.
 export const CONFIG = {
@@ -387,7 +388,7 @@ function createView(canvas,ui,director) {
   const observing=state.mode==='fleet'&&!state.failureTriggered;
   const deckTop=observing?height-50:ui.querySelector('.flight-deck').offsetTop-24;
   playBottom=state.phase==='opening'?height-65:arrival?lerp(height-65,deckTop,arrivalProgress*arrivalProgress*(3-2*arrivalProgress)):deckTop;
-  const playTop=mobile?160:180;playCenter=(playTop+playBottom)/2;
+  const playTop=matchMedia('(pointer:coarse) and (orientation:landscape)').matches?75:mobile?160:180;playCenter=(playTop+playBottom)/2;
   const usable=Math.max(120,playBottom-playTop);
   const wide=Math.min(width/1550,usable/750),zoom=reduced?0:Math.pow(1-clamp(agl/CONFIG.view.zoomAltitude,0,1),1.5);
   const flightScale=Math.min(state.mode==='fleet'?width/650:Infinity,lerp(wide,Math.min(CONFIG.view.closeScale,width/95),zoom),Math.max(wide,usable*.85/(agl+20)));
@@ -486,7 +487,7 @@ export function runLandingIntro(canvas,options={}) {
  if(activeCanvases.has(canvas))throw new Error('A landing intro is already running on this canvas');
  activeCanvases.add(canvas);
  return new Promise(resolve=>{
-  let director,view,ui,sounds,raf=0,ended=false,paused=false,last=0,acc=0,wall=0,skipPending=false;
+  let director,view,ui,sounds,touchPilot,raf=0,ended=false,paused=false,last=0,acc=0,wall=0,skipPending=false;
   const abort=new AbortController(),keys=new Set(),touch=new Map();
   const finish=(status='completed')=>{
    if(ended)return;ended=true;cancelAnimationFrame(raf);abort.abort();sounds?.destroy();view?.destroy();ui?.remove();activeCanvases.delete(canvas);
@@ -498,34 +499,36 @@ export function runLandingIntro(canvas,options={}) {
    director=options.mode==='fleet'?createFleetDirector(options.seed??Date.now(),options.assists):createDirector(options.seed??20260907,options.entries??6,options.assists);const {state}=director;
    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;state.phase=reduced?'ready':'opening';
    ui=document.createElement('div');ui.className='cockpit';
-   ui.innerHTML=`<span class="build-badge">${state.mode==='fleet'?'HECTIC FLEET 05 · SIMULTANEOUS':'CLASSIC · SEQUENTIAL'}</span><header class="masthead"><a class="wordmark" href="./">STÅLSFÄR<span>ENTRY OPERATIONS</span></a><div class="run-id">SECTOR 07 / HUGIN RECOVERY<br><span>LOCAL FLIGHT EXPERIMENT · 2D</span></div><div class="header-actions"><button data-action="pause" aria-label="Pause flight">Ⅱ <span>PAUSE</span></button><button data-action="settings" aria-expanded="false">ASSISTS</button><button data-action="skip">SKIP ↗</button></div></header>
+   ui.innerHTML=`<span class="build-badge">${state.mode==='fleet'?'HECTIC FLEET 06 · SIMULTANEOUS':'CLASSIC · SEQUENTIAL'}</span><header class="masthead"><a class="wordmark" href="./">STÅLSFÄR<span>ENTRY OPERATIONS</span></a><div class="run-id">SECTOR 07 / HUGIN RECOVERY<br><span>LOCAL FLIGHT EXPERIMENT · 2D</span></div><div class="header-actions"><button data-action="pause" aria-label="Pause flight">Ⅱ <span>PAUSE</span></button><button data-action="settings" aria-expanded="false">ASSISTS</button><button data-action="skip">SKIP ↗</button></div></header>
     <section class="mission"><div><span class="eyebrow">VEHICLE</span><strong data-read="entry">01 / 06</strong></div><div class="mission-detail"><span class="eyebrow" data-read="phase">AWAITING ENTRY</span><span data-read="queue">NEXT ENTRY IN 18s</span></div><div class="mission-end"><span class="eyebrow">MISSION TIME</span><span data-read="clock">00:00</span></div></section>
     <div class="crt-alert" hidden aria-live="assertive"><strong>LANDING MODULE BROKEN!</strong><span>MANUAL OVERRIDE</span></div><section class="takeover-card" hidden><strong>LANDING MODULE DAMAGED</strong><p><span data-last-unit>FINAL UNIT</span> · 50% automatic recovery chance.<br>Take over the final booster? <b data-offer-time></b></p><button data-action="takeover">TAKE OVER</button><button data-action="leave-auto">LEAVE ON AUTO</button></section><div class="fleet-status" hidden></div><div class="site-note"><span class="dot"></span> ONE SITE. SIX CHANCES.<span class="site-sub">RECOVER 5 TO REBUILD THE LAUNCHER</span></div>
     <div class="assists-panel" hidden><h3>FLIGHT ASSISTS</h3><label><input type="checkbox" data-assist="predictor" checked> Impact predictor</label><label><input type="checkbox" data-assist="stabilityHold" checked> Angular damping</label><label><input type="checkbox" data-assist="autoLegs" checked> Auto legs at 200 m</label><label><input type="checkbox" data-assist="slowMo"> Slow final 10 metres</label><label><input type="checkbox" data-sound checked> Sound effects</label><label><input type="checkbox" data-contrast> High contrast</label><p>O: orient to retrograde<br>H: diagnostic overlay</p></div>
     <div class="cinematic-plate"><span class="eyebrow" data-cinematic-title>HUGIN / EXHAUST SIGNATURE</span><span class="cinematic-subtitle">STÅLSFÄR · ARRIVAL CORRIDOR 07</span><a class="shader-credit" href="https://github.com/pulkitxm/claude-directory/tree/main/shaders/launch-shader" target="_blank" rel="noreferrer">LAUNCH SHADER · PULKIT · MIT</a><button data-action="skip-cinematic">SKIP CINEMATIC →</button></div>
-    <section class="start-card" hidden><span class="eyebrow">STÅLHEART / ARRIVAL SEQUENCE</span><h1>SIX DOWN<span>Bring them home.</span></h1><p>Pick a landing site. Arrest your fall.<br>Every rocket you save becomes a beginning.</p><nav class="mode-picker" aria-label="Game mode"><a href="?mode=classic">CLASSIC / SIX MANUAL</a><a href="?mode=fleet">FLEET / MANUAL OVERRIDE</a></nav><p class="mode-description">${state.mode==='fleet'?'HECTIC FLEET 05 — Six at once. Crossing trajectories. Shuffled landing sites. Observe the approach. Stand by for a control failure.':'Six consecutive descents. You pilot every booster.'}</p><div class="start-instructions"><span><kbd>SPACE</kbd><b>HOLD TO THRUST</b><small>Release to cut the engine</small></span><span><kbd>A / D</kbd><b>ROTATE</b><small>← / → also work</small></span><span><kbd>ESC</kbd><b>PAUSE</b><small>Press again to resume</small></span><span><kbd>1–7</kbd><b>CHOOSE A SITE</b><small>L: legs · O: retrograde</small></span></div><button class="primary" data-action="start">BEGIN DESCENT <span>↘</span></button><small>Touch: hold BURN + a rotation button together.<br>W / ↑ also thrust. Skip intro is in the menu.</small></section>
+    <section class="start-card" hidden><div class="start-content"><span class="eyebrow">STÅLHEART / ARRIVAL SEQUENCE</span><h1>SIX DOWN<span>Bring them home.</span></h1><p>Pick a landing site. Arrest your fall.<br>Every rocket you save becomes a beginning.</p><nav class="mode-picker" aria-label="Game mode"><a href="?mode=classic">CLASSIC / SIX MANUAL</a><a href="?mode=fleet">FLEET / MANUAL OVERRIDE</a></nav><p class="mode-description">${state.mode==='fleet'?'HECTIC FLEET 06 — Six at once. Crossing trajectories. Shuffled landing sites. Observe the approach. Stand by for a control failure.':'Six consecutive descents. You pilot every booster.'}</p><p class="touch-instructions">LEFT THUMB: touch and drag to steer.<br>RIGHT THUMB: hold BOOST to brake.</p><div class="start-instructions"><span><kbd>SPACE</kbd><b>HOLD TO THRUST</b><small>Release to cut the engine</small></span><span><kbd>A / D</kbd><b>ROTATE</b><small>← / → also work</small></span><span><kbd>ESC</kbd><b>PAUSE</b><small>Press again to resume</small></span><span><kbd>1–7</kbd><b>CHOOSE A SITE</b><small>L: legs · O: retrograde</small></span></div></div><div class="start-actions"><button type="button" data-install>INSTALL APP</button><small data-install-help hidden></small><button class="primary" data-action="start">BEGIN DESCENT <span>↘</span></button></div><small>Touch: hold BURN + a rotation button together.<br>W / ↑ also thrust. Skip intro is in the menu.</small></section>
     <section class="pause-card" hidden><span class="eyebrow">FLIGHT SUSPENDED</span><h2>Take a breath.</h2><p>The queue is paused too.</p><button class="primary" data-action="pause">RESUME FLIGHT</button></section>
     <section class="skip-card" hidden><h2>Skip arrival?</h2><p>Continue with the default resource bundle.</p><button class="primary" data-action="confirm-skip">SKIP INTRO</button><button data-action="cancel-skip">KEEP FLYING</button></section>
     <footer class="flight-deck"><div class="verdict-row"><span class="eyebrow" data-read="verdict" aria-live="polite">CHOOSE YOUR GROUND. MAKE IT HOME.</span><span><b data-read="saved">0</b> / 6 RECOVERED</span></div><div class="target-head"><span>LANDING SITES <span class="muted">/ SELECT 1–7</span></span><span data-read="target">SECTOR TELEMETRY</span></div><div class="pad-list">${state.terrain.pads.map(p=>`<button data-pad="${p.id}" aria-pressed="${p.id===state.selected}"><span class="pad-title"><b>SEC ${String(p.id+1).padStart(2,'0')}</b></span><span class="pad-meta">X≈${Math.round(p.x/10)*10} Z≈${Math.round(p.y/10)*10} m</span><span class="pad-dimensions">${p.width} m W · ${p.slope}°</span><small>✓ FUEL MARGIN</small></button>`).join('')}</div>
     <div class="instruments"><div class="instrument"><span class="eyebrow">ALTITUDE AGL</span><strong data-read="alt">460</strong><small>METRES</small></div><div class="instrument"><span class="eyebrow">SINK RATE</span><strong data-read="sink">38.0</strong><small>M/S <span class="muted">· LIMIT 6</span></small><div class="meter"><i data-sink></i></div></div><div class="instrument"><span class="eyebrow">LATERAL</span><strong data-read="drift">→ 0.0</strong><small>M/S <span class="muted">· LIMIT 4</span></small><div class="meter"><i data-drift></i></div></div><div class="instrument fuel"><span class="eyebrow">PROPELLANT</span><strong data-read="fuel">13.8</strong><small>SECONDS OF FULL BURN</small><div class="meter"><i data-fuel></i></div></div><div class="instrument secondary"><span class="eyebrow">ATTITUDE / SLOPE</span><strong class="small"><span data-read="tilt">0.0°</span> / <span data-read="slope">0.0°</span></strong><small data-read="legs">STOWED</small><small>WIND <span data-read="wind">→ 0.00 m/s²</span></small></div></div>
     <div class="control-strip"><span><kbd>SPACE / W / ↑</kbd> HOLD THRUST <kbd>A D / ← →</kbd> TILT <kbd>L</kbd> LEGS <kbd>O</kbd> RETROGRADE <kbd>ESC</kbd> PAUSE</span><span>MODEL BY <a href="https://jelaludo.github.io/SentryTowers_A6/" target="_blank" rel="noreferrer">JELALUDO</a></span></div>
-    <div class="touch-controls"><button data-hold="left" aria-label="Rotate left">↶</button><button data-hold="right" aria-label="Rotate right">↷</button><button data-action="legs">LEGS</button><button data-action="orient">ALIGN</button><button data-hold="thrust">HOLD TO BURN ↑</button></div></footer><span class="sr-only" aria-live="polite" data-read="callout"></span>`;
+    <div class="touch-controls"><button data-hold="left" aria-label="Rotate left">↶</button><button data-hold="right" aria-label="Rotate right">↷</button><button data-action="legs">LEGS</button><button data-action="orient">ALIGN</button><button data-hold="thrust">HOLD TO BURN ↑</button></div></footer><div class="thumb-controls" hidden><div class="thumb-stick" hidden aria-hidden="true"><i></i></div><span class="steer-hint">TOUCH + DRAG TO STEER</span><div class="thumb-tools"><button data-action="sectors">SECTORS</button><button data-action="legs">LEGS</button></div><button class="thumb-boost" data-hold="thrust" aria-label="Hold boost">BOOST<span>HOLD</span></button></div><span class="sr-only" aria-live="polite" data-read="callout"></span>`;
    canvas.insertAdjacentElement('afterend',ui);view=createView(canvas,ui,director);
    for(const input of ui.querySelectorAll('[data-assist]'))input.checked=state.assists[input.dataset.assist];
    const on=(el,type,handler)=>el.addEventListener(type,handler,{signal:abort.signal});
-   const clearInputs=()=>{sounds.thrust(false);keys.clear();touch.clear();ui.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));};
+   const clearInputs=()=>{touchPilot?.reset();sounds.thrust(false);keys.clear();touch.clear();ui.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));};
    const handoff=()=>{if(state.mode!=='fleet')sounds.handoff();};
    const syncPhase=()=>{
     const cinematic=state.phase==='opening'||state.phase==='arrival';ui.classList.toggle('is-cinematic',cinematic);ui.dataset.phase=state.phase;
-    ui.querySelector('.start-card').hidden=state.phase!=='ready';ui.querySelector('.cinematic-plate').hidden=!cinematic;
+    ui.querySelector('.start-card').hidden=state.phase!=='ready';
+    ui.querySelector('.thumb-controls').hidden=paused||state.phase!=='flying'||state.mode==='fleet'&&state.controlled===null;ui.querySelector('.cinematic-plate').hidden=!cinematic;
     ui.querySelector('[data-cinematic-title]').textContent=state.phase==='opening'?'HUGIN / EXHAUST SIGNATURE':'HUGIN / ATMOSPHERIC ENTRY';
    };syncPhase();
-   const setPause=value=>{paused=value;sounds.pause(value);clearInputs();ui.querySelector('[data-action="skip-cinematic"]').disabled=value;updateHud(ui,director,null);ui.querySelector('.pause-card').hidden=!paused||skipPending;ui.querySelector('[data-action="pause"]').setAttribute('aria-label',paused?'Resume flight':'Pause flight');};
+   const setPause=value=>{paused=value;sounds.pause(value);clearInputs();syncPhase();ui.querySelector('[data-action="skip-cinematic"]').disabled=value;updateHud(ui,director,null);ui.querySelector('.pause-card').hidden=!paused||skipPending;ui.querySelector('[data-action="pause"]').setAttribute('aria-label',paused?'Resume flight':'Pause flight');};
    const action=name=>{
     if(name==='start'&&state.phase==='ready'){sounds.begin();clearInputs();state.phase=reduced?'flying':'arrival';state.arrivalTime=0;syncPhase();if(reduced)handoff();canvas.focus();}
     if(name==='takeover'||name==='leave-auto'){director.choose?.(name==='takeover');clearInputs();canvas.focus();}
     if(name==='skip-cinematic'){const wasArrival=state.phase==='arrival';clearInputs();state.phase=state.phase==='opening'?'ready':'flying';syncPhase();if(wasArrival)handoff();(state.phase==='ready'?ui.querySelector('[data-action="start"]'):canvas).focus();}
     if(name==='pause'&&state.phase!=='ready'&&!skipPending)setPause(!paused);
+    if(name==='sectors')ui.classList.toggle('sectors-open');
     if(name==='settings'){const p=ui.querySelector('.assists-panel');p.hidden=!p.hidden;ui.querySelector('[data-action="settings"]').setAttribute('aria-expanded',String(!p.hidden));}
     if(name==='legs'&&(state.mode!=='fleet'||state.controlled!==null))state.v.deploy=true;
     if(name==='orient'&&(state.mode!=='fleet'||state.controlled!==null))state.orient=true;
@@ -548,11 +551,12 @@ export function runLandingIntro(canvas,options={}) {
     if(/^Digit[1-7]$/.test(e.code)&&(state.mode!=='fleet'||state.controlled!==null))state.selected=Number(e.code.slice(-1))-1;
    });
    on(window,'keyup',e=>keys.delete(e.code));on(window,'blur',()=>{clearInputs();if(state.phase!=='ready')setPause(true);});
-   on(document,'visibilitychange',()=>{if(document.hidden&&state.phase!=='ready')setPause(true);});on(window,'resize',view.resize);
+   on(document,'visibilitychange',()=>{if(document.hidden&&state.phase!=='ready')setPause(true);});on(window,'resize',()=>{clearInputs();view.resize();});
    for(const button of ui.querySelectorAll('[data-hold]')){
     on(button,'pointerdown',e=>{e.preventDefault();if(paused||state.phase!=='flying')return;button.setPointerCapture(e.pointerId);touch.set(e.pointerId,button.dataset.hold);button.classList.add('held');});
     const release=e=>{touch.delete(e.pointerId);button.classList.remove('held');};on(button,'pointerup',release);on(button,'pointercancel',release);on(button,'lostpointercapture',release);
    }
+   touchPilot=createTouchPilot(ui,abort.signal,()=>!paused&&state.phase==='flying'&&(state.mode!=='fleet'||state.controlled!==null));
    const artBase=new URL('./assets/',import.meta.url);
    // A missing or malformed atlas leaves the vector vehicle active.
    (async()=>{try{
@@ -568,16 +572,16 @@ export function runLandingIntro(canvas,options={}) {
      if(!paused&&state.phase==='opening'){director.step({},elapsed);syncPhase();acc=0;}else if(!paused&&state.phase!=='ready'){
       const slow=state.assists.slowMo&&state.v.y-state.terrain.height(state.v.x)-CONFIG.vehicle.legHeight<10?.6:1;acc+=elapsed*slow;
       let steps=0;while(acc>=CONFIG.sim.dt&&steps<CONFIG.sim.maxSteps){
-       const held=[...touch.values()];const input={thrust:keys.has('Space')||keys.has('KeyW')||keys.has('ArrowUp')||held.includes('thrust'),turn:Number(keys.has('KeyD')||keys.has('ArrowRight')||held.includes('right'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')||held.includes('left'))};
+       const held=[...touch.values()];const input={thrust:keys.has('Space')||keys.has('KeyW')||keys.has('ArrowUp')||held.includes('thrust'),turn:clamp((touchPilot?.turn??0)+Number(keys.has('KeyD')||keys.has('ArrowRight')||held.includes('right'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')||held.includes('left')),-1,1)};
        sounds.thrust(state.phase==='flying'&&(state.mode!=='fleet'||state.controlled!==null)&&input.thrust&&state.v.fuel>0);
        const beforePhase=state.phase;const r=director.step(input);
        if(state.phase!==beforePhase){if(beforePhase==='arrival'&&state.phase==='flying')handoff();syncPhase();if(beforePhase==='arrival'||beforePhase==='opening'){clearInputs();(state.phase==='ready'?ui.querySelector('[data-action="start"]'):canvas).focus();}}
        if(r)sounds.resolve(r.outcome==='wreck'&&r.padTier!=='OUTSIDE');
        for(const event of director.drainEvents?.()??[]){
-        if(event.type==='contact'){if(event.manual)sounds.resolve(event.result.outcome==='wreck');else if(event.result.outcome==='wreck')sounds.crash();if(options.onEntryResolved)options.onEntryResolved(event.result);}
+        if(event.type==='contact'){syncPhase();if(event.manual)sounds.resolve(event.result.outcome==='wreck');else if(event.result.outcome==='wreck')sounds.crash();if(options.onEntryResolved)options.onEntryResolved(event.result);}
         if(event.type==='failure'){ui.querySelector(`[data-pad="${state.selected}"]`)?.scrollIntoView({block:'nearest',inline:'center'});clearInputs();sounds.handoff();sounds.alarm();syncPhase();canvas.focus();}
         if(event.type==='damaged')sounds.alarm();
-        if(event.type==='takeover'){ui.querySelector(`[data-pad="${state.selected}"]`)?.scrollIntoView({block:'nearest',inline:'center'});sounds.handoff();clearInputs();}
+        if(event.type==='takeover'){syncPhase();ui.querySelector(`[data-pad="${state.selected}"]`)?.scrollIntoView({block:'nearest',inline:'center'});sounds.handoff();clearInputs();}
        }
        for(const impact of director.drainImpacts())sounds.impact(impact);
        if(r&&options.onEntryResolved)options.onEntryResolved(r);acc-=CONFIG.sim.dt;steps++;

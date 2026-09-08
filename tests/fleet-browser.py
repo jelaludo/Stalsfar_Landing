@@ -1,7 +1,7 @@
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
- b=p.chromium.launch();page=b.new_page(viewport={'width':1440,'height':900},reduced_motion='reduce');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ b=p.chromium.launch();page=b.new_page(service_workers='block',viewport={'width':1440,'height':900},reduced_motion='reduce');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  source=Path('landing/fleet.js').read_text().replace("s.mode='fleet';","globalThis.testFleet=s;s.mode='fleet';")
  page.route('**/fleet.js*',lambda r:r.fulfill(content_type='text/javascript',body=source))
  page.add_init_script('''window.clips=[];const start=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...args){clips.push(this.buffer.duration);return start.apply(this,args);};''')
