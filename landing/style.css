@@ -32,3 +32,5 @@
 .fleet-status{position:absolute;left:32px;right:32px;top:175px;display:flex;gap:8px}.fleet-status span{padding:5px 9px;font-size:8px;color:var(--muted);background:#061116c9;border-top:1px solid var(--line)}.fleet-status b{display:block;font-weight:400;margin-top:5px}.fleet-status .manual{color:var(--amber);border-color:var(--amber)}
 .cockpit:has(.fleet-status:not([hidden])) .site-note{display:none}
 @media(max-width:700px){.fleet-status{top:143px;left:16px;right:16px;gap:3px}.fleet-status span{flex:1;padding:4px;font-size:7px}.crt-alert{top:25%;padding:12px;width:310px}.crt-alert strong{font-size:15px}.takeover-card{top:24%;right:16px;width:calc(100% - 32px)}.mode-picker{margin:10px 0}.start-card{top:48%}}
+.build-badge{position:absolute;top:6px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.15em;color:#ffbd69;white-space:nowrap;border-bottom:1px solid #ffbd6966;padding:3px 8px;background:#061116de;z-index:6}
+@media(max-width:700px){.build-badge{font-size:7px;top:2px}}

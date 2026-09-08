@@ -3,7 +3,7 @@ from playwright.sync_api import sync_playwright
 with sync_playwright() as p:
  b=p.chromium.launch();page=b.new_page(viewport={'width':1440,'height':900},reduced_motion='reduce');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  source=Path('landing/fleet.js').read_text().replace("s.mode='fleet';","globalThis.testFleet=s;s.mode='fleet';")
- page.route('**/fleet.js',lambda r:r.fulfill(content_type='text/javascript',body=source))
+ page.route('**/fleet.js*',lambda r:r.fulfill(content_type='text/javascript',body=source))
  page.add_init_script('''window.clips=[];const start=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...args){clips.push(this.buffer.duration);return start.apply(this,args);};''')
  page.clock.install();page.goto('http://localhost:8001/landing/?mode=fleet&seed=7');page.get_by_role('button',name='BEGIN DESCENT').click();page.clock.run_for(1000)
  page.wait_for_function('clips.some(d=>d>1&&d<1.1)&&clips.some(d=>d>32&&d<34)')

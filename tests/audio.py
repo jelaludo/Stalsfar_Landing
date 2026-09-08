@@ -11,7 +11,7 @@ with sync_playwright() as p:
  AudioBufferSourceNode.prototype.stop=function(...args){audioStops++;return stop.apply(this,args);};
  const start=AudioBufferSourceNode.prototype.start;
  AudioBufferSourceNode.prototype.start=function(...args){audioStarts.push(this.buffer.duration);return start.apply(this,args);};''')
- page.clock.install();page.goto('http://127.0.0.1:8001/landing/')
+ page.clock.install();page.goto('http://127.0.0.1:8001/landing/?mode=classic')
  assert page.evaluate('audioContexts.length')==0
  page.get_by_role('button',name='BEGIN DESCENT').click()
  page.wait_for_function("audioContexts[0].state==='running'")

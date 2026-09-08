@@ -28,3 +28,10 @@ let crossings=0;
 for(const u of crossing){assert.equal(fleetLateral(u,u.crossingTime+1),u.pad.x);assert(Math.abs(fleetLateral(u,0)-u.pad.x)>40);}
 for(let i=0;i<crossing.length;i++)for(let j=i+1;j<crossing.length;j++)if((fleetLateral(crossing[i],0)-fleetLateral(crossing[j],0))*(crossing[i].pad.x-crossing[j].pad.x)<0)crossings++;
 assert(crossings>=3);console.log(`Crossing approaches: ${crossings} pairs change horizontal order, then align with their pads.`);
+for(const u of crossing){
+ assert(2*Math.abs(u.entryOffset)/u.crossingTime**2<=4.50001,'Lateral braking stays within thrust capability');
+ let previous=fleetLateral(u,0);
+ for(let time=.1;time<=u.crossingTime;time+=.1){const x=fleetLateral(u,time);assert((x-previous)*u.entryOffset<=.00001,'No reversal or swerving');previous=x;}
+}
+assert(createFleetDirector(7).state.fleet.every((u,i)=>u.pad.id!==[0,1,2,4,5,6][i]),'Pad assignments are shuffled independently of vehicle numbers');
+console.log('Smooth one-way braking arcs, acceleration limits and shuffled pads passed.');

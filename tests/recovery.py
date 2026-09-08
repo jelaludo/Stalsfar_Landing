@@ -6,7 +6,7 @@ with sync_playwright() as p:
  for survivors in [2,3,6]:
   page=b.new_page(viewport={'width':1440,'height':900});page.on('pageerror',lambda e:errors.append(str(e)))
   result={'status':'completed','grade':'B','survivors':survivors,'reconstructionUnlocked':survivors>=5,'resources':{'propellant':260,'alloy':150,'crew':3,'credits':420},'assistsUsed':[], 'landings':[{'index':i,'padTier':'APRON','outcome':'perfect' if i<survivors else 'wreck','verdict':'SINK 1.5m/s · LIMIT 2.5m/s'} for i in range(6)]}
-  page.route('**/lander.js',lambda route:route.fulfill(content_type='text/javascript',body='export async function runLandingIntro(){return '+json.dumps(result)+';}'))
+  page.route('**/lander.js*',lambda route:route.fulfill(content_type='text/javascript',body='export async function runLandingIntro(){return '+json.dumps(result)+';}'))
   page.goto('http://localhost:8001/landing/')
   page.wait_for_selector('.summary')
   if survivors<3:assert page.locator('.recovery-stage').count()==0

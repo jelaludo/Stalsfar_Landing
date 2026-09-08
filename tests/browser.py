@@ -7,7 +7,7 @@ with sync_playwright() as p:
  errors=[]
  def scene(**kwargs):
   page=b.new_page(**kwargs);page.on('pageerror',lambda e:errors.append(str(e)))
-  page.clock.install();page.goto('http://127.0.0.1:8001/landing/');return page
+  page.clock.install();page.goto('http://127.0.0.1:8001/landing/?mode=classic');return page
  def ready(page):
   if page.locator('.cockpit').get_attribute('data-phase')=='opening':
    page.get_by_role('button',name='SKIP CINEMATIC').click();page.clock.run_for(20)
@@ -59,7 +59,7 @@ with sync_playwright() as p:
  # Missing sprites and reduced motion: immediately readable splash, no camera cinematic.
  fallback=b.new_page(viewport={'width':1000,'height':800},reduced_motion='reduce')
  fallback.on('pageerror',lambda e:errors.append(str(e)));fallback.route('**/assets/**',lambda r:r.abort())
- fallback.clock.install();fallback.goto('http://127.0.0.1:8001/landing/')
+ fallback.clock.install();fallback.goto('http://127.0.0.1:8001/landing/?mode=classic')
  assert fallback.locator('.cockpit').get_attribute('data-phase')=='ready'
  fallback.get_by_role('button',name='BEGIN DESCENT').click()
  assert fallback.locator('.cockpit').get_attribute('data-phase')=='flying'
