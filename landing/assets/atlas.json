@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "credit": "Model by jelaludo",
+  "image_size_px": [
+    384,
+    512
+  ],
+  "coordinates": "pixels: top-left origin; pivot shared across all images",
+  "pixels_per_metre": 21.366718831507566,
+  "vehicle_height_m": 21.399999618530273,
+  "height_definition": "Intact deployed foot sole to capsule nose; includes capsule, excludes launch complex",
+  "pivot_source_z_m": 13.75,
+  "pivot_method": "Estimated dry COM: 75% booster at z11.5, 25% capsule at z20.5; not physical mass data",
+  "camera": {
+    "projection": "orthographic",
+    "view": "front side, looking along Blender +Y",
+    "vertical_span_m": 23.9625
+  },
+  "sprites": {
+    "deployed": {
+      "image": "hugin_deployed.png",
+      "model": "hugin_deployed.glb",
+      "pivot_px": [
+        192,
+        256
+      ],
+      "height_m": 21.399999618530273,
+      "bounds_m": {
+        "min": [
+          -5.478747367858887,
+          -5.849999904632568,
+          -11.25
+        ],
+        "max": [
+          5.478748321533203,
+          3.6394715309143066,
+          10.149999618530273
+        ]
+      },
+      "sprite_bounds_px": {
+        "x": 74,
+        "y": 38,
+        "width": 236,
+        "height": 460
+      },
+      "pivot_in_bounds_px": [
+        118,
+        218
+      ]
+    },
+    "stowed": {
+      "image": "hugin_stowed.png",
+      "model": "hugin_stowed.glb",
+      "pivot_px": [
+        192,
+        256
+      ],
+      "height_m": 19.81999969482422,
+      "bounds_m": {
+        "min": [
+          -3.199779510498047,
+          -3.294060230255127,
+          -9.670000076293945
+        ],
+        "max": [
+          3.1997804641723633,
+          2.3237082958221436,
+          10.149999618530273
+        ]
+      },
+      "sprite_bounds_px": {
+        "x": 123,
+        "y": 38,
+        "width": 138,
+        "height": 426
+      },
+      "pivot_in_bounds_px": [
+        69,
+        218
+      ]
+    },
+    "wreck": {
+      "image": "hugin_wreck.png",
+      "model": "hugin_wreck.glb",
+      "pivot_px": [
+        192,
+        256
+      ],
+      "height_m": 21.399999618530273,
+      "bounds_m": {
+        "min": [
+          -5.478747367858887,
+          -5.849999904632568,
+          -11.25
+        ],
+        "max": [
+          5.478748321533203,
+          3.6394715309143066,
+          10.149999618530273
+        ]
+      },
+      "sprite_bounds_px": {
+        "x": 74,
+        "y": 38,
+        "width": 236,
+        "height": 460
+      },
+      "pivot_in_bounds_px": [
+        118,
+        218
+      ]
+    }
+  }
+}
