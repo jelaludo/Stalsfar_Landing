@@ -1,5 +1,9 @@
 import {CONFIG,createDirector,createVehicle,createRng,flightStep,feet,findObstacle,stepWreck} from './lander.js';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+export function fleetLateral(unit,time){
+ const q=clamp(time/unit.crossingTime,0,1),smooth=q*q*q*(10+q*(-15+6*q));
+ return unit.pad.x+unit.entryOffset*(1-smooth)+unit.sweep*Math.sin(2*Math.PI*q)*Math.sin(Math.PI*q)**2;
+}
 export function createFleetDirector(seed,assists={}){
  const base=createDirector(seed,6,assists),s=base.state,t=s.terrain,rng=createRng(`${seed}/fleet`),events=[],impacts=[];
  const order=[0,5,2,1,3];for(let i=order.length-1;i>0;i--){const j=Math.floor(rng.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
@@ -10,6 +14,13 @@ export function createFleetDirector(seed,assists={}){
   const height=i===manual?340:430+rng.random()*120;
   Object.assign(v,{x:pad.x,y:pad.y+11.25+height,vx:0,vy:i===manual?-26:-height/duration,angle:i===manual?.12:0,angVel:0});
   s.fleet.push({v,pad,duration,height,success:rng.random()<(i===4?.5:.9),manual:i===manual,resolved:false});
+ }
+ // A separate stream keeps arrival timing and reliability stable for existing seeds.
+ const approach=createRng(`${seed}/crossing`);
+ for(const unit of s.fleet){
+  unit.crossingTime=8+approach.random()*3;unit.sweep=(approach.random()-.5)*180;
+  unit.entryOffset=clamp(1400-unit.pad.x+(approach.random()-.5)*100,80,1320)-unit.pad.x;
+  if(!unit.manual){unit.v.x=fleetLateral(unit,0);unit.v.angle=Math.sign(unit.entryOffset)*.8;}
  }
  const focus=i=>{s.controlled=i;s.index=i;s.v=s.fleet[i].v;s.previous={...s.v};s.selected=s.fleet[i].pad.id;s.orient=false;s.entryTime=s.time;};focus(manual);
  const complete=unit=>{
@@ -51,6 +62,8 @@ export function createFleetDirector(seed,assists={}){
      const q=clamp(s.time/unit.duration,0,1),h=unit.height,d=unit.duration;
      const altitude=(2*q*q*q-3*q*q+1)*h+(q*q*q-2*q*q+q)*(-h)+(q*q*q-q*q)*(-1.5*d);
      v.vy=((6*q*q-6*q)*h+(3*q*q-4*q+1)*(-h)+(3*q*q-2*q)*(-1.5*d))/d;
+     v.x=fleetLateral(unit,s.time);v.vx=(fleetLateral(unit,s.time+.01)-fleetLateral(unit,s.time-.01))/.02;
+     const oldAngle=v.angle;v.angle=clamp(-Math.atan2(v.vx,Math.max(8,-v.vy)),-1.15,1.15);v.angVel=(v.angle-oldAngle)/dt;
      v.y=unit.pad.y+11.25+altitude;v.throttle=clamp(.27+q*.25,0,1);v.fuel=Math.max(25,160-s.time*2);v.legs=clamp((220-altitude)/50,0,1);
     }
     if(unit.success&&s.time>=unit.duration||feet(v).some(p=>p.y<=t.height(p.x)))complete(unit);

@@ -22,3 +22,9 @@ let regular=0,regularTotal=0,last=0;
 for(let seed=0;seed<100;seed++){const r=run(seed);for(const unit of r.s.fleet){if(unit.manual)continue;const success=unit.outcome!=='wreck';assert.equal(success,unit.success,`seed ${seed}, unit ${unit.v.index}: planned reliability matches landing`);if(unit.v.index===4)last+=success;else{regular+=success;regularTotal++;}}}
 assert(regular/regularTotal>.8&&regular/regularTotal<.98);assert(last>30&&last<70);
 console.log(`Fleet: six concurrent units, successful optional takeover, refusal/expiry, failure path, deterministic runs. Auto success ${regular}/${regularTotal}; final ${last}/100.`);
+const {fleetLateral}=await import('../landing/fleet.js');
+const crossing=createFleetDirector(7).state.fleet.filter(u=>!u.manual);
+let crossings=0;
+for(const u of crossing){assert.equal(fleetLateral(u,u.crossingTime+1),u.pad.x);assert(Math.abs(fleetLateral(u,0)-u.pad.x)>40);}
+for(let i=0;i<crossing.length;i++)for(let j=i+1;j<crossing.length;j++)if((fleetLateral(crossing[i],0)-fleetLateral(crossing[j],0))*(crossing[i].pad.x-crossing[j].pad.x)<0)crossings++;
+assert(crossings>=3);console.log(`Crossing approaches: ${crossings} pairs change horizontal order, then align with their pads.`);

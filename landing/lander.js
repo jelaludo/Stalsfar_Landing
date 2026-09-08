@@ -390,8 +390,8 @@ function createView(canvas,ui,director) {
   const usable=Math.max(120,playBottom-playTop);
   const wide=Math.min(width/1550,usable/750),zoom=reduced?0:Math.pow(1-clamp(agl/CONFIG.view.zoomAltitude,0,1),1.5);
   const flightScale=Math.min(lerp(wide,Math.min(CONFIG.view.closeScale,width/95),zoom),Math.max(wide,usable*.85/(agl+20)));
-  const targetScale=arrival?lerp(Math.min(12,width/38),wide,pullback):state.mode==='fleet'&&state.controlled===null?wide:flightScale;
-  const targetX=arrival?v.x+(700-v.x)*wide/targetScale*pullback:state.mode==='fleet'&&state.controlled===null?700:v.x+(700-v.x)*wide/targetScale*(1-zoom)+v.vx*.3*zoom;
+  const targetScale=arrival?lerp(Math.min(12,width/38),wide,pullback):state.mode==='fleet'&&(state.controlled===null||state.time<11)?wide:flightScale;
+  const targetX=arrival?v.x+(700-v.x)*wide/targetScale*pullback:state.mode==='fleet'&&(state.controlled===null||state.time<11)?700:v.x+(700-v.x)*wide/targetScale*(1-zoom)+v.vx*.3*zoom;
   if(lastIndex!==state.index){scale=wide;camX=700;camY=330;lastIndex=state.index;}
   const ease=1-Math.exp(-dt*10);scale=lerp(scale,targetScale,ease);camX=lerp(camX,targetX,ease);camY=t.height(v.x)+(playBottom-playCenter-30)/scale;
   if(arrival){scale=targetScale;camX=targetX+width*.2*(1-arrivalProgress)/scale;const wideRocketY=playBottom-30-(v.y-t.height(v.x))*wide;
@@ -423,8 +423,8 @@ function createView(canvas,ui,director) {
    ctx.setLineDash([3,7]);for(let i=1;i<prediction.path.length;i++)line(pt(prediction.path[i-1].x,prediction.path[i-1].y),pt(prediction.path[i].x,prediction.path[i].y),'#67867b77');ctx.setLineDash([]);
    if(prediction.reached){const p=pt(prediction.x,prediction.y);line({x:p.x-5,y:p.y-5},{x:p.x+5,y:p.y+5},'#88ad9b');line({x:p.x+5,y:p.y-5},{x:p.x-5,y:p.y+5},'#88ad9b');}
   }
-  for(const unit of state.fleet??[]){if(unit.resolved||unit.v===state.v)continue;const other=unit.v;drawReentry(other,arrival?.6:clamp(1-state.time/5,0,.6),absoluteTime);drawVehicle(other,null,absoluteTime);const p=pt(other.x,other.y);label(`H-${other.index+1} AUTO`,clamp(p.x+8,8,width-90),clamp(p.y,playTop+50,playBottom-20),'#7bbaa4',9);}
-  if(state.phase!=='resolved'&&state.phase!=='done'&&state.v.alive){drawReentry(v,arrival?1:state.phase==='flying'?clamp(1-(state.time-state.entryTime)/CONFIG.cinematic.reentryTime,0,1):0,absoluteTime);drawVehicle(v,null,absoluteTime);}
+  for(const unit of state.fleet??[]){if(unit.resolved||unit.v===state.v)continue;const other=unit.v;drawReentry(other,arrival?.6:clamp(1-state.time/11,0,.85),absoluteTime);drawVehicle(other,null,absoluteTime);const p=pt(other.x,other.y);label(`H-${other.index+1} AUTO`,clamp(p.x+8,8,width-90),clamp(p.y,playTop+50,playBottom-20),'#7bbaa4',9);}
+  if(state.phase!=='resolved'&&state.phase!=='done'&&state.v.alive){drawReentry(v,arrival?1:state.phase==='flying'?clamp(1-(state.time-state.entryTime)/(state.mode==='fleet'?9:CONFIG.cinematic.reentryTime),0,1):0,absoluteTime);drawVehicle(v,null,absoluteTime);}
   const rocket=pt(v.x,v.y);
   if(state.phase==='flying'&&state.v.alive){
    // A fixed-size locator keeps the true-scale vehicle findable at wide zoom.
