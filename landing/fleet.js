@@ -7,48 +7,51 @@ export function fleetLateral(unit,time){
 }
 export function createFleetDirector(seed,assists={}){
  const base=createDirector(seed,6,assists),s=base.state,t=s.terrain,rng=createRng(`${seed}/fleet`),events=[],impacts=[];
- const order=[0,5,2,1,3];for(let i=order.length-1;i>0;i--){const j=Math.floor(rng.random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}
- const manual=order[Math.floor(rng.random()*3)],times=[27,28,32,36,38].map(n=>n+rng.random()*3);
  const assignments=[0,1,2,4,5,6],routing=createRng(`${seed}/routing`);
- do{for(let i=5;i>0;i--){const j=Math.floor(routing.random()*(i+1));[assignments[i],assignments[j]]=[assignments[j],assignments[i]];}}while(assignments.some((pad,i)=>pad===[0,1,2,4,5,6][i]));
- s.mode='fleet';s.controlled=manual;s.firstManual=manual;s.offer=null;s.noticeUntil=4;s.fleet=[];
+ for(let i=5;i>0;i--){const j=Math.floor(routing.random()*(i+1));[assignments[i],assignments[j]]=[assignments[j],assignments[i]];}
+ // The failure can affect any vehicle; its corridor has neighbours on both sides.
+ const candidates=assignments.map((pad,i)=>({pad,i})).filter(u=>u.pad>0&&u.pad<6);
+ const manual=candidates[Math.floor(rng.random()*candidates.length)].i;
+ const lastCandidates=[0,1,2,3,4,5].filter(i=>i!==manual),lastUnit=lastCandidates[Math.floor(rng.random()*5)];
+ const waveTime=29+rng.random()*2;
+ s.mode='fleet';s.controlled=null;s.firstManual=manual;s.lastUnit=lastUnit;s.failureAt=12+rng.random()*2;s.failureTriggered=false;s.offer=null;s.noticeUntil=0;s.fleet=[];
  for(let i=0;i<6;i++){
-  const pad=t.pads[assignments[i]],v=createVehicle(t,i,160),duration=i===4?58+rng.random()*6:times[order.indexOf(i)];
-  const height=i===manual?340:490+rng.random()*160;
-  Object.assign(v,{x:pad.x,y:pad.y+11.25+height,vx:0,vy:i===manual?-26:-height/duration,angle:i===manual?-.25:0,angVel:0});
-  if(i===manual){v.x=pad.x-65;v.vx=8;}
-  s.fleet.push({v,pad,duration,height,success:rng.random()<(i===4?.5:.9),manual:i===manual,resolved:false});
+  const pad=t.pads[assignments[i]],v=createVehicle(t,i,160),duration=i===lastUnit?waveTime+6+rng.random()*2:i===manual?waveTime+(rng.random()-.5)*2:waveTime-3+(rng.random()-.5)*4;
+  const height=430+rng.random()*65;
+  Object.assign(v,{x:pad.x,y:pad.y+11.25+height,vx:0,vy:-height/duration,angle:0,angVel:0});
+  s.fleet.push({v,pad,duration,height,success:rng.random()<(i===lastUnit?.5:.9),manual:false,resolved:false});
  }
  // A separate stream keeps arrival timing and reliability stable for existing seeds.
  const approach=createRng(`${seed}/crossing`);
  for(const unit of s.fleet){
   unit.crossingTime=0;
-  unit.entryOffset=clamp(1400-unit.pad.x+(approach.random()-.5)*100,80,1320)-unit.pad.x;
-  if(unit.v.index===4)unit.entryOffset=clamp(unit.entryOffset,-240,240);
+  unit.entryOffset=clamp(clamp(1400-unit.pad.x+(approach.random()-.5)*100,80,1320)-unit.pad.x,-430,430);
+  if(unit.v.index===lastUnit)unit.entryOffset=clamp(unit.entryOffset,-240,240);
   unit.crossingTime=Math.max(12,Math.sqrt(2*Math.abs(unit.entryOffset)/4.5));
   if(!unit.manual){unit.v.x=fleetLateral(unit,0);unit.v.vx=-2*unit.entryOffset/unit.crossingTime;unit.v.angle=Math.atan2(2*unit.entryOffset/unit.crossingTime**2,CONFIG.sim.gravity-2*(unit.height-1.5*unit.duration)/unit.duration**2);}
  }
- const focus=i=>{s.controlled=i;s.index=i;s.v=s.fleet[i].v;s.previous={...s.v};s.selected=s.fleet[i].pad.id;s.orient=false;s.entryTime=s.time;};focus(manual);
+ const focus=i=>{s.controlled=i;s.index=i;s.v=s.fleet[i].v;s.previous={...s.v};s.selected=s.fleet[i].pad.id;s.orient=false;s.entryTime=s.time;};s.v=s.fleet[0].v;s.previous={...s.v};s.selected=-1;s.verdict='FLEET TELEMETRY / AUTOMATIC DESCENT';
  const complete=unit=>{
   const active=s.v,index=s.index,phase=s.phase,current=s.currentWreck;
   s.v=unit.v;s.index=unit.v.index;
-  const r=base.resolve();unit.resolved=true;unit.outcome=r.outcome;r.control=unit.manual?'manual':'automatic';
+  const r=base.resolve();unit.resolved=true;unit.outcome=r.outcome;r.control=unit.manual?'manual':'automatic';r.touchdownTime=s.time;
   s.v=active;s.index=index;s.phase=phase;s.currentWreck=current;
   events.push({type:'contact',result:r,manual:unit.manual});
   if(unit.v.index===s.controlled){
    s.controlled=null;s.noticeUntil=0;s.verdict=`H-${unit.v.index+1} / ${r.outcome.toUpperCase()}`;
-   if(unit.v.index===manual&&r.outcome!=='wreck'&&!s.fleet[4].resolved){s.offer={until:s.time+9};events.push({type:'damaged'});}
+   if(unit.v.index===manual&&r.outcome!=='wreck'&&!s.fleet[lastUnit].resolved){s.offer={until:Math.min(s.time+7,s.fleet[lastUnit].duration-3)};events.push({type:'damaged'});}
   }
  };
  const choose=take=>{
   if(!s.offer)return;s.offer=null;
-  if(take&&!s.fleet[4].resolved){s.fleet[4].manual=true;focus(4);s.noticeUntil=s.time+3;events.push({type:'takeover'});}
+  if(take&&!s.fleet[lastUnit].resolved){s.fleet[lastUnit].manual=true;focus(lastUnit);s.noticeUntil=s.time+3;events.push({type:'takeover'});}
  };
  const step=(input={},dt=CONFIG.sim.dt)=>{
   if(['ready','done'].includes(s.phase))return;
   if(s.phase==='opening'){s.openingTime+=dt;if(s.openingTime>=CONFIG.cinematic.opening)s.phase='ready';return;}
   if(s.phase==='arrival'){s.arrivalTime+=dt*.75;if(s.arrivalTime>=CONFIG.cinematic.arrival)s.phase='flying';return;}
   s.time+=dt;s.previous={...s.v};
+  if(!s.failureTriggered&&s.time>=s.failureAt){s.failureTriggered=true;s.fleet[manual].manual=true;focus(manual);s.noticeUntil=s.time+4;s.verdict='LANDING MODULE BROKEN / MANUAL OVERRIDE';events.push({type:'failure'});}
   for(const body of t.occupied)if(body.outcome==='wreck')stepWreck(body,t,dt,event=>impacts.push({...event,time:s.time}));
   if(s.offer&&s.time>=s.offer.until)choose(false);
   for(const unit of s.fleet){

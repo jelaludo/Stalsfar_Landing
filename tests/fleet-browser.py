@@ -6,6 +6,8 @@ with sync_playwright() as p:
  page.route('**/fleet.js*',lambda r:r.fulfill(content_type='text/javascript',body=source))
  page.add_init_script('''window.clips=[];const start=AudioBufferSourceNode.prototype.start;AudioBufferSourceNode.prototype.start=function(...args){clips.push(this.buffer.duration);return start.apply(this,args);};''')
  page.clock.install();page.goto('http://localhost:8001/landing/?mode=fleet&seed=7');page.get_by_role('button',name='BEGIN DESCENT').click();page.clock.run_for(1000)
+ assert page.locator('.crt-alert').is_hidden();assert page.evaluate('testFleet.controlled===null&&testFleet.selected===-1');assert page.locator('.pad-list .selected').count()==0
+ page.clock.run_for(13500)
  page.wait_for_function('clips.some(d=>d>1&&d<1.1)&&clips.some(d=>d>32&&d<34)')
  assert page.locator('.crt-alert').is_visible();assert page.locator('.fleet-status span').count()==6
  page.screenshot(path='/tmp/stalsfar-fleet-override.png')
@@ -14,7 +16,7 @@ with sync_playwright() as p:
  page.clock.run_for(300);assert page.locator('.takeover-card').is_visible()
  page.screenshot(path='/tmp/stalsfar-fleet-offer.png')
  page.get_by_role('button',name='TAKE OVER',exact=True).click();page.clock.run_for(200)
- assert page.evaluate('testFleet.controlled')==4
+ assert page.evaluate('testFleet.controlled===testFleet.lastUnit')
  page.keyboard.press('Escape');before=page.evaluate('testFleet.time');page.clock.run_for(1000);assert page.evaluate('testFleet.time')==before;page.keyboard.press('Escape')
  page.clock.run_for(85000);assert page.locator('.summary').count()==1
  page.get_by_role('button',name='FLY AGAIN').click();assert page.locator('.start-card').is_visible()

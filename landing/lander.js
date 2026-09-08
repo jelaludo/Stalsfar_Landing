@@ -1,5 +1,5 @@
 import { createLandingAudio } from './audio.js';
-import { createFleetDirector } from './fleet.js?v=hectic03';
+import { createFleetDirector } from './fleet.js?v=hectic04';
 import { createLaunchPlume } from './launch-plume.js';
 // Six Down — a standalone 2D landing experiment. Model by jelaludo.
 export const CONFIG = {
@@ -384,16 +384,17 @@ function createView(canvas,ui,director) {
   if(arrival){const lead=CONFIG.cinematic.arrival-state.arrivalTime;v.x-=v.vx*lead;v.y-=v.vy*lead;}
   if(state.phase==='resolved'&&state.currentWreck){v.x=state.currentWreck.x;v.y=t.height(v.x)+CONFIG.vehicle.legHeight;}
   const agl=Math.max(0,v.y-t.height(v.x)-CONFIG.vehicle.legHeight),mobile=width<700;
-  const deckTop=ui.querySelector('.flight-deck').offsetTop-24;
+  const observing=state.mode==='fleet'&&!state.failureTriggered;
+  const deckTop=observing?height-50:ui.querySelector('.flight-deck').offsetTop-24;
   playBottom=state.phase==='opening'?height-65:arrival?lerp(height-65,deckTop,arrivalProgress*arrivalProgress*(3-2*arrivalProgress)):deckTop;
   const playTop=mobile?160:180;playCenter=(playTop+playBottom)/2;
   const usable=Math.max(120,playBottom-playTop);
   const wide=Math.min(width/1550,usable/750),zoom=reduced?0:Math.pow(1-clamp(agl/CONFIG.view.zoomAltitude,0,1),1.5);
-  const flightScale=Math.min(lerp(wide,Math.min(CONFIG.view.closeScale,width/95),zoom),Math.max(wide,usable*.85/(agl+20)));
+  const flightScale=Math.min(state.mode==='fleet'?width/650:Infinity,lerp(wide,Math.min(CONFIG.view.closeScale,width/95),zoom),Math.max(wide,usable*.85/(agl+20)));
   const targetScale=arrival&&state.mode==='fleet'?wide:arrival?lerp(Math.min(12,width/38),wide,pullback):state.mode==='fleet'&&(state.controlled===null||state.time<.6)?wide:flightScale;
   const targetX=arrival&&state.mode==='fleet'?700:arrival?v.x+(700-v.x)*wide/targetScale*pullback:state.mode==='fleet'&&(state.controlled===null||state.time<.6)?700:v.x+(700-v.x)*wide/targetScale*(1-zoom)+v.vx*.3*zoom;
   if(lastIndex!==state.index){scale=wide;camX=700;camY=330;lastIndex=state.index;}
-  const ease=1-Math.exp(-dt*10);scale=lerp(scale,targetScale,ease);camX=lerp(camX,targetX,ease);camY=t.height(v.x)+(playBottom-playCenter-30)/scale;
+  const ease=1-Math.exp(-dt*10);scale=lerp(scale,targetScale,ease);camX=lerp(camX,targetX,ease);camY=t.height(observing?700:v.x)+(playBottom-playCenter-30)/scale;
   if(arrival&&state.mode!=='fleet'){scale=targetScale;camX=targetX+width*.2*(1-arrivalProgress)/scale;const wideRocketY=playBottom-30-(v.y-t.height(v.x))*wide;
    const screenY=lerp(playCenter-height*.2*(1-arrivalProgress),wideRocketY,pullback);camY=v.y+(screenY-playCenter)/scale;}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle=CONFIG.view.sky;ctx.fillRect(0,0,width,height);
@@ -410,7 +411,7 @@ function createView(canvas,ui,director) {
   for(const pad of t.pads){const occupied=padOccupied(pad,t),selected=pad.id===state.selected;
    const a=pt(pad.x-pad.width/2,t.height(pad.x-pad.width/2)),b=pt(pad.x+pad.width/2,t.height(pad.x+pad.width/2));
    const color=occupied?'#987566':selected?CONFIG.view.hot:'#8ad0b0';line(a,b,color,selected?3:2);
-   const center=pt(pad.x,pad.y);if(center.x>10&&center.x<width-10){label(`${String(pad.id+1).padStart(2,'0')}${occupied?' ×':''}`,center.x-8,center.y+20,color,11);if(selected){line({x:a.x-7,y:a.y-12},{x:a.x-7,y:a.y+5},color);line({x:b.x+7,y:b.y-12},{x:b.x+7,y:b.y+5},color);label('DESIGNATED',center.x-34,center.y-17,color,10);}}
+   const center=pt(pad.x,pad.y);if(center.x>10&&center.x<width-10){label(`S${String(pad.id+1).padStart(2,'0')}${occupied?' ×':''}`,center.x-8,center.y+20,color,11);if(selected){line({x:a.x-7,y:a.y-12},{x:a.x-7,y:a.y+5},color);line({x:b.x+7,y:b.y-12},{x:b.x+7,y:b.y+5},color);label('TARGET SECTOR',center.x-34,center.y-17,color,10);}}
   }
   for(const o of t.occupied){
    if(o.outcome==='wreck'){
@@ -419,14 +420,15 @@ function createView(canvas,ui,director) {
    for(const part of o.parts??[o])drawVehicle(part,o.outcome,absoluteTime);
    for(const shard of o.debris??[]){if(reduced&&!shard.rest)continue;const p=pt(shard.x,shard.y),size=Math.max(1.5,shard.size*scale);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(shard.angle);ctx.fillStyle=o.age<1.5?'#e7af76':'#9c7863';ctx.beginPath();ctx.moveTo(-size,-size*.5);ctx.lineTo(size,-size*.3);ctx.lineTo(size*.4,size*.65);ctx.closePath();ctx.fill();ctx.restore();}
   }
-  if(state.assists.predictor&&prediction&&state.phase==='flying'){
+  if(state.assists.predictor&&prediction&&state.phase==='flying'&&(state.mode!=='fleet'||state.controlled!==null)){
    ctx.setLineDash([3,7]);for(let i=1;i<prediction.path.length;i++)line(pt(prediction.path[i-1].x,prediction.path[i-1].y),pt(prediction.path[i].x,prediction.path[i].y),'#67867b77');ctx.setLineDash([]);
    if(prediction.reached){const p=pt(prediction.x,prediction.y);line({x:p.x-5,y:p.y-5},{x:p.x+5,y:p.y+5},'#88ad9b');line({x:p.x+5,y:p.y-5},{x:p.x-5,y:p.y+5},'#88ad9b');}
   }
-  for(const unit of state.fleet??[]){if(unit.resolved||unit.v===state.v)continue;const other={...unit.v};if(arrival){const lead=(CONFIG.cinematic.arrival-state.arrivalTime)/.75;other.x-=other.vx*lead;other.y-=other.vy*lead;}drawReentry(other,arrival?.6:clamp(1-state.time/20,0,.95),absoluteTime);drawVehicle(other,null,absoluteTime);const p=pt(other.x,other.y);label(`H-${other.index+1} → ${String(unit.pad.id+1).padStart(2,'0')}`,clamp(p.x+8,8,width-90),clamp(p.y,playTop+50,playBottom-20),'#7bbaa4',9);}
+  for(const unit of state.fleet??[]){if(unit.resolved||unit.v===state.v)continue;const other={...unit.v};if(arrival){const lead=(CONFIG.cinematic.arrival-state.arrivalTime)/.75;other.x-=other.vx*lead;other.y-=other.vy*lead;}drawReentry(other,arrival?.6:clamp(1-state.time/20,0,.95),absoluteTime);drawVehicle(other,null,absoluteTime);const p=pt(other.x,other.y);label(`H-${other.index+1}`,clamp(p.x+8,8,width-90),clamp(p.y,playTop+50,playBottom-20),'#7bbaa4',9);}
   if(state.phase!=='resolved'&&state.phase!=='done'&&state.v.alive){drawReentry(v,arrival?1:state.phase==='flying'?clamp(1-(state.time-state.entryTime)/(state.mode==='fleet'?9:CONFIG.cinematic.reentryTime),0,1):0,absoluteTime);drawVehicle(v,null,absoluteTime);}
   const rocket=pt(v.x,v.y);
-  if(state.phase==='flying'&&state.v.alive){
+  if(state.mode==='fleet'&&state.controlled===null&&state.v.alive)label(`H-${v.index+1}`,rocket.x+8,rocket.y,'#7bbaa4',9);
+  if(state.phase==='flying'&&state.v.alive&&(state.mode!=='fleet'||state.controlled!==null)){
    // A fixed-size locator keeps the true-scale vehicle findable at wide zoom.
    const r=Math.max(14,CONFIG.vehicle.height*scale*.65);ctx.strokeStyle='#a4c7b477';ctx.beginPath();ctx.arc(rocket.x,rocket.y,r,-.6,.6);ctx.stroke();ctx.beginPath();ctx.arc(rocket.x,rocket.y,r,Math.PI-.6,Math.PI+.6);ctx.stroke();
    label(`H-${String(state.index+1).padStart(2,'0')}`,rocket.x+r+9,rocket.y-5,'#b2c6bb',10);
@@ -444,19 +446,21 @@ function updateHud(ui,director,prediction) {
  set('entry',`${String(state.index+1).padStart(2,'0')} / ${String(state.count).padStart(2,'0')}`);set('clock',`${Math.floor(state.time/60).toString().padStart(2,'0')}:${Math.floor(state.time%60).toString().padStart(2,'0')}`);
  set('sink',Math.max(0,-v.vy).toFixed(1));set('drift',`${v.vx<0?'←':'→'} ${Math.abs(v.vx).toFixed(1)}`);set('alt',Math.round(agl).toLocaleString());set('fuel',(v.fuel/CONFIG.vehicle.burnRate).toFixed(1));set('tilt',`${deg(v.angle).toFixed(1)}°`);
  set('wind',`${wind()<0?'←':'→'} ${Math.abs(wind()).toFixed(2)} m/s²`);set('legs',v.legs>=1?'DEPLOYED':v.deploy?'DEPLOYING':agl<200?'DEPLOY LEGS':'STOWED');
- set('target',pad?`${String(pad.id+1).padStart(2,'0')} ${pad.tier} · ${Math.round(pad.x-v.x)} m`:'FREE FLIGHT');set('slope',`${(pad?.slope??t.slope(prediction?.x??v.x)).toFixed(1)}°`);
+ set('target',pad?`SEC ${String(pad.id+1).padStart(2,'0')} · ΔX ${Math.round(pad.x-v.x)} m`:'FREE FLIGHT');set('slope',`${(pad?.slope??t.slope(prediction?.x??v.x)).toFixed(1)}°`);
  set('verdict',state.verdict);set('callout',state.callout);
  set('saved',state.landings.filter(r=>r.outcome!=='wreck').length);
  const delay=Math.max(0,state.time-state.entryTime-CONFIG.queue.interval),eta=Math.max(0,CONFIG.queue.interval-(state.time-state.entryTime));
  set('queue',state.index+1>=state.count?'FINAL VEHICLE':delay?`HOLDING · −${(delay*CONFIG.queue.holdBurn).toFixed(0)} FUEL`:`NEXT ENTRY IN ${eta.toFixed(0)}s`);
  set('phase',state.phase==='ready'?'AWAITING ENTRY':state.phase==='resolved'?'CONTACT REPORT':agl<120?'FINAL APPROACH':'DESCENT / DESIGNATE');
  if(state.mode==='fleet'){
-  const flying=state.phase==='flying';
-  set('phase',state.controlled===null?'FLEET / MONITORING':'MANUAL OVERRIDE');
+  const flying=state.phase==='flying';ui.classList.toggle('is-observing',!state.failureTriggered&&flying);
+  if(!state.failureTriggered){set('entry','06 CONTACTS');set('target','AUTOMATIC GUIDANCE');}
+  set('phase',state.controlled===null?'FLEET / AUTOMATIC DESCENT':'MANUAL OVERRIDE');
   set('queue',`${state.fleet.filter(u=>!u.resolved).length} STILL DESCENDING`);
-  const alert=ui.querySelector('.crt-alert');alert.hidden=!flying||state.time>state.noticeUntil;
-  alert.querySelector('strong').textContent=state.index===4?'LANDING MODULE DAMAGED':'LANDING MODULE BROKEN!';
+  const alert=ui.querySelector('.crt-alert');alert.hidden=!flying||!state.failureTriggered||state.time>state.noticeUntil;
+  alert.querySelector('strong').textContent=state.index===state.lastUnit?'LANDING MODULE DAMAGED':'LANDING MODULE BROKEN!';
   const offer=ui.querySelector('.takeover-card');offer.hidden=!flying||!state.offer;
+  ui.querySelector('[data-last-unit]').textContent=`H-${String(state.lastUnit+1).padStart(2,'0')}`;
   if(state.offer)ui.querySelector('[data-offer-time]').textContent=`${Math.ceil(state.offer.until-state.time)}s`;
   const strip=ui.querySelector('.fleet-status');strip.hidden=!flying;
   strip.innerHTML=state.fleet.map(u=>`<span class="${u.v.index===state.controlled?'manual':''}">H-${u.v.index+1}<b>${u.resolved?u.outcome.toUpperCase():u.v.index===state.controlled?'YOU → '+String(u.pad.id+1).padStart(2,'0'):Math.round(Math.max(0,u.v.y-t.height(u.v.x)-11.25))+' M'}</b></span>`).join('');
@@ -494,15 +498,15 @@ export function runLandingIntro(canvas,options={}) {
    director=options.mode==='fleet'?createFleetDirector(options.seed??Date.now(),options.assists):createDirector(options.seed??20260907,options.entries??6,options.assists);const {state}=director;
    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;state.phase=reduced?'ready':'opening';
    ui=document.createElement('div');ui.className='cockpit';
-   ui.innerHTML=`<span class="build-badge">${state.mode==='fleet'?'HECTIC FLEET 03 · SIMULTANEOUS':'CLASSIC · SEQUENTIAL'}</span><header class="masthead"><a class="wordmark" href="./">STÅLSFÄR<span>ENTRY OPERATIONS</span></a><div class="run-id">SECTOR 07 / HUGIN RECOVERY<br><span>LOCAL FLIGHT EXPERIMENT · 2D</span></div><div class="header-actions"><button data-action="pause" aria-label="Pause flight">Ⅱ <span>PAUSE</span></button><button data-action="settings" aria-expanded="false">ASSISTS</button><button data-action="skip">SKIP ↗</button></div></header>
+   ui.innerHTML=`<span class="build-badge">${state.mode==='fleet'?'HECTIC FLEET 04 · SIMULTANEOUS':'CLASSIC · SEQUENTIAL'}</span><header class="masthead"><a class="wordmark" href="./">STÅLSFÄR<span>ENTRY OPERATIONS</span></a><div class="run-id">SECTOR 07 / HUGIN RECOVERY<br><span>LOCAL FLIGHT EXPERIMENT · 2D</span></div><div class="header-actions"><button data-action="pause" aria-label="Pause flight">Ⅱ <span>PAUSE</span></button><button data-action="settings" aria-expanded="false">ASSISTS</button><button data-action="skip">SKIP ↗</button></div></header>
     <section class="mission"><div><span class="eyebrow">VEHICLE</span><strong data-read="entry">01 / 06</strong></div><div class="mission-detail"><span class="eyebrow" data-read="phase">AWAITING ENTRY</span><span data-read="queue">NEXT ENTRY IN 18s</span></div><div class="mission-end"><span class="eyebrow">MISSION TIME</span><span data-read="clock">00:00</span></div></section>
-    <div class="crt-alert" hidden aria-live="assertive"><strong>LANDING MODULE BROKEN!</strong><span>MANUAL OVERRIDE</span></div><section class="takeover-card" hidden><strong>LANDING MODULE DAMAGED</strong><p>H-05 · 50% automatic recovery chance.<br>Take over the final booster? <b data-offer-time></b></p><button data-action="takeover">TAKE OVER</button><button data-action="leave-auto">LEAVE ON AUTO</button></section><div class="fleet-status" hidden></div><div class="site-note"><span class="dot"></span> ONE SITE. SIX CHANCES.<span class="site-sub">RECOVER 5 TO REBUILD THE LAUNCHER</span></div>
+    <div class="crt-alert" hidden aria-live="assertive"><strong>LANDING MODULE BROKEN!</strong><span>MANUAL OVERRIDE</span></div><section class="takeover-card" hidden><strong>LANDING MODULE DAMAGED</strong><p><span data-last-unit>FINAL UNIT</span> · 50% automatic recovery chance.<br>Take over the final booster? <b data-offer-time></b></p><button data-action="takeover">TAKE OVER</button><button data-action="leave-auto">LEAVE ON AUTO</button></section><div class="fleet-status" hidden></div><div class="site-note"><span class="dot"></span> ONE SITE. SIX CHANCES.<span class="site-sub">RECOVER 5 TO REBUILD THE LAUNCHER</span></div>
     <div class="assists-panel" hidden><h3>FLIGHT ASSISTS</h3><label><input type="checkbox" data-assist="predictor" checked> Impact predictor</label><label><input type="checkbox" data-assist="stabilityHold" checked> Angular damping</label><label><input type="checkbox" data-assist="autoLegs" checked> Auto legs at 200 m</label><label><input type="checkbox" data-assist="slowMo"> Slow final 10 metres</label><label><input type="checkbox" data-sound checked> Sound effects</label><label><input type="checkbox" data-contrast> High contrast</label><p>O: orient to retrograde<br>H: diagnostic overlay</p></div>
     <div class="cinematic-plate"><span class="eyebrow" data-cinematic-title>HUGIN / EXHAUST SIGNATURE</span><span class="cinematic-subtitle">STÅLSFÄR · ARRIVAL CORRIDOR 07</span><a class="shader-credit" href="https://github.com/pulkitxm/claude-directory/tree/main/shaders/launch-shader" target="_blank" rel="noreferrer">LAUNCH SHADER · PULKIT · MIT</a><button data-action="skip-cinematic">SKIP CINEMATIC →</button></div>
-    <section class="start-card" hidden><span class="eyebrow">STÅLHEART / ARRIVAL SEQUENCE</span><h1>SIX DOWN<span>Bring them home.</span></h1><p>Pick a landing site. Arrest your fall.<br>Every rocket you save becomes a beginning.</p><nav class="mode-picker" aria-label="Game mode"><a href="?mode=classic">CLASSIC / SIX MANUAL</a><a href="?mode=fleet">FLEET / MANUAL OVERRIDE</a></nav><p class="mode-description">${state.mode==='fleet'?'HECTIC FLEET 03 — Six at once. Crossing trajectories. Shuffled landing sites. One broken landing module.':'Six consecutive descents. You pilot every booster.'}</p><div class="start-instructions"><span><kbd>SPACE</kbd><b>HOLD TO THRUST</b><small>Release to cut the engine</small></span><span><kbd>A / D</kbd><b>ROTATE</b><small>← / → also work</small></span><span><kbd>ESC</kbd><b>PAUSE</b><small>Press again to resume</small></span><span><kbd>1–7</kbd><b>CHOOSE A SITE</b><small>L: legs · O: retrograde</small></span></div><button class="primary" data-action="start">BEGIN DESCENT <span>↘</span></button><small>Touch: hold BURN + a rotation button together.<br>W / ↑ also thrust. Skip intro is in the menu.</small></section>
+    <section class="start-card" hidden><span class="eyebrow">STÅLHEART / ARRIVAL SEQUENCE</span><h1>SIX DOWN<span>Bring them home.</span></h1><p>Pick a landing site. Arrest your fall.<br>Every rocket you save becomes a beginning.</p><nav class="mode-picker" aria-label="Game mode"><a href="?mode=classic">CLASSIC / SIX MANUAL</a><a href="?mode=fleet">FLEET / MANUAL OVERRIDE</a></nav><p class="mode-description">${state.mode==='fleet'?'HECTIC FLEET 04 — Six at once. Crossing trajectories. Shuffled landing sites. Observe the approach. Stand by for a control failure.':'Six consecutive descents. You pilot every booster.'}</p><div class="start-instructions"><span><kbd>SPACE</kbd><b>HOLD TO THRUST</b><small>Release to cut the engine</small></span><span><kbd>A / D</kbd><b>ROTATE</b><small>← / → also work</small></span><span><kbd>ESC</kbd><b>PAUSE</b><small>Press again to resume</small></span><span><kbd>1–7</kbd><b>CHOOSE A SITE</b><small>L: legs · O: retrograde</small></span></div><button class="primary" data-action="start">BEGIN DESCENT <span>↘</span></button><small>Touch: hold BURN + a rotation button together.<br>W / ↑ also thrust. Skip intro is in the menu.</small></section>
     <section class="pause-card" hidden><span class="eyebrow">FLIGHT SUSPENDED</span><h2>Take a breath.</h2><p>The queue is paused too.</p><button class="primary" data-action="pause">RESUME FLIGHT</button></section>
     <section class="skip-card" hidden><h2>Skip arrival?</h2><p>Continue with the default resource bundle.</p><button class="primary" data-action="confirm-skip">SKIP INTRO</button><button data-action="cancel-skip">KEEP FLYING</button></section>
-    <footer class="flight-deck"><div class="verdict-row"><span class="eyebrow" data-read="verdict" aria-live="polite">CHOOSE YOUR GROUND. MAKE IT HOME.</span><span><b data-read="saved">0</b> / 6 RECOVERED</span></div><div class="target-head"><span>LANDING SITES <span class="muted">/ SELECT 1–7</span></span><span data-read="target">01 BARGE</span></div><div class="pad-list">${state.terrain.pads.map(p=>`<button data-pad="${p.id}" aria-pressed="${p.id===0}"><span class="pad-title"><b>${String(p.id+1).padStart(2,'0')}</b> ${p.tier}</span><span class="pad-meta">${p.width} m · ${p.slope}° · ×${p.mult.toFixed(1)}</span><small>✓ FUEL MARGIN</small></button>`).join('')}</div>
+    <footer class="flight-deck"><div class="verdict-row"><span class="eyebrow" data-read="verdict" aria-live="polite">CHOOSE YOUR GROUND. MAKE IT HOME.</span><span><b data-read="saved">0</b> / 6 RECOVERED</span></div><div class="target-head"><span>LANDING SITES <span class="muted">/ SELECT 1–7</span></span><span data-read="target">SECTOR TELEMETRY</span></div><div class="pad-list">${state.terrain.pads.map(p=>`<button data-pad="${p.id}" aria-pressed="${p.id===state.selected}"><span class="pad-title"><b>SEC ${String(p.id+1).padStart(2,'0')}</b></span><span class="pad-meta">X≈${Math.round(p.x/10)*10} Z≈${Math.round(p.y/10)*10} m</span><span class="pad-dimensions">${p.width} m W · ${p.slope}°</span><small>✓ FUEL MARGIN</small></button>`).join('')}</div>
     <div class="instruments"><div class="instrument"><span class="eyebrow">ALTITUDE AGL</span><strong data-read="alt">460</strong><small>METRES</small></div><div class="instrument"><span class="eyebrow">SINK RATE</span><strong data-read="sink">38.0</strong><small>M/S <span class="muted">· LIMIT 6</span></small><div class="meter"><i data-sink></i></div></div><div class="instrument"><span class="eyebrow">LATERAL</span><strong data-read="drift">→ 0.0</strong><small>M/S <span class="muted">· LIMIT 4</span></small><div class="meter"><i data-drift></i></div></div><div class="instrument fuel"><span class="eyebrow">PROPELLANT</span><strong data-read="fuel">13.8</strong><small>SECONDS OF FULL BURN</small><div class="meter"><i data-fuel></i></div></div><div class="instrument secondary"><span class="eyebrow">ATTITUDE / SLOPE</span><strong class="small"><span data-read="tilt">0.0°</span> / <span data-read="slope">0.0°</span></strong><small data-read="legs">STOWED</small><small>WIND <span data-read="wind">→ 0.00 m/s²</span></small></div></div>
     <div class="control-strip"><span><kbd>SPACE / W / ↑</kbd> HOLD THRUST <kbd>A D / ← →</kbd> TILT <kbd>L</kbd> LEGS <kbd>O</kbd> RETROGRADE <kbd>ESC</kbd> PAUSE</span><span>MODEL BY <a href="https://jelaludo.github.io/SentryTowers_A6/" target="_blank" rel="noreferrer">JELALUDO</a></span></div>
     <div class="touch-controls"><button data-hold="left" aria-label="Rotate left">↶</button><button data-hold="right" aria-label="Rotate right">↷</button><button data-action="legs">LEGS</button><button data-action="orient">ALIGN</button><button data-hold="thrust">HOLD TO BURN ↑</button></div></footer><span class="sr-only" aria-live="polite" data-read="callout"></span>`;
@@ -510,7 +514,7 @@ export function runLandingIntro(canvas,options={}) {
    for(const input of ui.querySelectorAll('[data-assist]'))input.checked=state.assists[input.dataset.assist];
    const on=(el,type,handler)=>el.addEventListener(type,handler,{signal:abort.signal});
    const clearInputs=()=>{sounds.thrust(false);keys.clear();touch.clear();ui.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));};
-   const handoff=()=>{sounds.handoff();if(state.mode==='fleet'){sounds.alarm();state.noticeUntil=state.time+4;}};
+   const handoff=()=>{if(state.mode!=='fleet')sounds.handoff();};
    const syncPhase=()=>{
     const cinematic=state.phase==='opening'||state.phase==='arrival';ui.classList.toggle('is-cinematic',cinematic);ui.dataset.phase=state.phase;
     ui.querySelector('.start-card').hidden=state.phase!=='ready';ui.querySelector('.cinematic-plate').hidden=!cinematic;
@@ -523,13 +527,13 @@ export function runLandingIntro(canvas,options={}) {
     if(name==='skip-cinematic'){const wasArrival=state.phase==='arrival';clearInputs();state.phase=state.phase==='opening'?'ready':'flying';syncPhase();if(wasArrival)handoff();(state.phase==='ready'?ui.querySelector('[data-action="start"]'):canvas).focus();}
     if(name==='pause'&&state.phase!=='ready'&&!skipPending)setPause(!paused);
     if(name==='settings'){const p=ui.querySelector('.assists-panel');p.hidden=!p.hidden;ui.querySelector('[data-action="settings"]').setAttribute('aria-expanded',String(!p.hidden));}
-    if(name==='legs')state.v.deploy=true;
-    if(name==='orient')state.orient=true;
+    if(name==='legs'&&(state.mode!=='fleet'||state.controlled!==null))state.v.deploy=true;
+    if(name==='orient'&&(state.mode!=='fleet'||state.controlled!==null))state.orient=true;
     if(name==='skip'){skipPending=true;setPause(true);ui.querySelector('.skip-card').hidden=false;ui.querySelector('[data-action="cancel-skip"]').focus();}
     if(name==='cancel-skip'){skipPending=false;ui.querySelector('.skip-card').hidden=true;setPause(false);}
     if(name==='confirm-skip')finish('skipped');
    };
-   on(ui,'click',e=>{const b=e.target.closest('button');if(b?.dataset.action)action(b.dataset.action);if(b?.dataset.pad!==undefined)state.selected=Number(b.dataset.pad);});
+   on(ui,'click',e=>{const b=e.target.closest('button');if(b?.dataset.action)action(b.dataset.action);if(b?.dataset.pad!==undefined&&(state.mode!=='fleet'||state.controlled!==null))state.selected=Number(b.dataset.pad);});
    on(ui,'change',e=>{if(e.target.dataset.assist)state.assists[e.target.dataset.assist]=e.target.checked;if('sound' in e.target.dataset)sounds.mute(!e.target.checked);if('contrast' in e.target.dataset)ui.parentElement.classList.toggle('high-contrast',e.target.checked);});
    on(window,'keydown',e=>{
     const controlFocused=/^(INPUT|BUTTON|A)$/.test(e.target.tagName);
@@ -540,8 +544,8 @@ export function runLandingIntro(canvas,options={}) {
     if(!paused&&state.phase==='flying'&&!e.repeat)keys.add(e.code);if(e.repeat)return;
     if(e.code==='Enter'&&state.phase==='ready')action('start');
     if(e.code==='KeyL')action('legs');if(e.code==='KeyO')action('orient');if(e.code==='KeyH')view.toggleDebug();
-    if(e.code==='Tab')state.selected=(state.selected+1)%state.terrain.pads.length;
-    if(/^Digit[1-7]$/.test(e.code))state.selected=Number(e.code.slice(-1))-1;
+    if(e.code==='Tab'&&(state.mode!=='fleet'||state.controlled!==null))state.selected=(state.selected+1)%state.terrain.pads.length;
+    if(/^Digit[1-7]$/.test(e.code)&&(state.mode!=='fleet'||state.controlled!==null))state.selected=Number(e.code.slice(-1))-1;
    });
    on(window,'keyup',e=>keys.delete(e.code));on(window,'blur',()=>{clearInputs();if(state.phase!=='ready')setPause(true);});
    on(document,'visibilitychange',()=>{if(document.hidden&&state.phase!=='ready')setPause(true);});on(window,'resize',view.resize);
@@ -571,8 +575,9 @@ export function runLandingIntro(canvas,options={}) {
        if(r)sounds.resolve(r.outcome==='wreck'&&r.padTier!=='OUTSIDE');
        for(const event of director.drainEvents?.()??[]){
         if(event.type==='contact'){if(event.manual)sounds.resolve(event.result.outcome==='wreck');else if(event.result.outcome==='wreck')sounds.crash();if(options.onEntryResolved)options.onEntryResolved(event.result);}
+        if(event.type==='failure'){ui.querySelector(`[data-pad="${state.selected}"]`)?.scrollIntoView({block:'nearest',inline:'center'});clearInputs();sounds.handoff();sounds.alarm();syncPhase();canvas.focus();}
         if(event.type==='damaged')sounds.alarm();
-        if(event.type==='takeover'){sounds.handoff();clearInputs();}
+        if(event.type==='takeover'){ui.querySelector(`[data-pad="${state.selected}"]`)?.scrollIntoView({block:'nearest',inline:'center'});sounds.handoff();clearInputs();}
        }
        for(const impact of director.drainImpacts())sounds.impact(impact);
        if(r&&options.onEntryResolved)options.onEntryResolved(r);acc-=CONFIG.sim.dt;steps++;
