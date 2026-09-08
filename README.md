@@ -91,11 +91,11 @@ The model is copied from `SentryTowers_A6/assets/game-ready/hugin_launchpad_d0_g
 
 `tests/recovery.py` checks the 2/3/6 recovery threshold, actual animation, mobile layout, and replay. Publish the repository root with GitHub Pages; `index.html` redirects to the game.
 
-## Fleet 04: observe, failure, manual rescue
+## Fleet 05: observe, failure, manual rescue
 
-The published root opens HECTIC FLEET 04. Classic is available at `landing/?mode=classic`. Each replay generates a fresh seed; `?mode=fleet&seed=7` repeats a scenario.
+The published root opens HECTIC FLEET 05. Classic is available at `landing/?mode=classic`. Each replay generates a fresh seed; `?mode=fleet&seed=7` repeats a scenario.
 
-All six start under automatic guidance. The initial fleet-wide view reveals no player assignment or selected sector. After 12–14 seconds of flight, a randomly chosen controller fails; an orange CRT alert and warning sounds announce manual override, and the camera focuses on that craft. Its position, velocity, orientation and fuel are preserved at takeover. Any of the six vehicle IDs can fail; its destination has neighbouring corridors on both sides.
+All six start under automatic guidance. The initial fleet-wide view reveals no player assignment or selected sector. After 3.5–4.5 seconds of flight, a randomly chosen controller fails; an orange CRT alert and warning sounds announce manual override, and the camera focuses on that craft. Its position, velocity, orientation and fuel are preserved at takeover. Any of the six vehicle IDs can fail; its destination has neighbouring corridors on both sides.
 
 Four other boosters target a shared arrival window, typically within seconds of a clean manual landing. The last booster follows several seconds later. Healthy automatic units retain independent 90% success chances. A successful first manual landing offers a brief optional takeover of the remaining damaged unit; without intervention its success chance is 50%. The offer never pauses the fleet, and expires before touchdown. Esc pauses everything.
 
@@ -106,3 +106,5 @@ Landing sites are labelled SEC 01–07 with approximate local X/Z coordinates (m
 Both modes use the user-supplied `yodguard-warning_low-2-540185.mp3` (`handoff.mp3`) when manual control actually begins. Fleet also plays a two-second excerpt of `freesound_community-sci-fi-warning-alert-29632.mp3` (`alarm.mp3`) for the failure and damaged-module offer. There is no warning or manual target revelation while merely observing. Existing audio muffling, mute, pause and cleanup apply.
 
 `node tests/fleet.mjs` checks complete/deterministic runs, optional rescue, probability outcomes, smooth braking, hidden initial assignment, all six possible failures, and nearby touchdowns on both sides of the player. `tests/fleet-browser.py` checks observation, CRT/audio handoff, takeover, pause, completion and replay.
+
+Fleet 05 accelerates the atmospheric establishing shot to about 1.2 seconds, followed by an early controller failure. Entry sink speed is 1.7 × height / arrival time (roughly 30–40 m/s). Five vehicles have modest diagonal drift, with one vertical approach. Plasma expires 2.8 seconds into flight and does not restart on takeover. Automatic touchdowns cluster around the manual landing, with the optional final unit a few seconds behind.

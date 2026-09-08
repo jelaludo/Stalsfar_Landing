@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#060e14"><title>HECTIC FLEET 04 · Six Down</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./style.css?v=hectic04"></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#060e14"><title>HECTIC FLEET 05 · Six Down</title><link rel="icon" href="data:,"><link rel="stylesheet" href="./style.css?v=hectic05"></head><body>
 <canvas tabindex="0" aria-label="HUGIN landing field. Hold Space, W or up arrow to thrust; release to cut. Esc pauses; A and D or arrows rotate. Select a landing site with 1 to 7. L deploys legs."></canvas>
 <script type="module">
-import {runLandingIntro} from './lander.js?v=hectic04';
+import {runLandingIntro} from './lander.js?v=hectic05';
 const canvas=document.querySelector('canvas');
 let recoveryAbort;
 
@@ -10,7 +10,7 @@ async function begin(){
  recoveryAbort?.abort();
  document.querySelector('.summary')?.remove();
  const params=new URLSearchParams(location.search);
- document.title=params.get('mode')==='classic'?'CLASSIC · Six Down':'HECTIC FLEET 04 · Six Down';
+ document.title=params.get('mode')==='classic'?'CLASSIC · Six Down':'HECTIC FLEET 05 · Six Down';
  const result=await runLandingIntro(canvas,{seed:params.get('seed')||(params.get('mode')!=='classic'?crypto.getRandomValues(new Uint32Array(1))[0]:20260907),mode:params.get('mode')||'fleet',entries:6});
  const panel=document.createElement('main');panel.className='summary';
  const celebration=result.status==='completed'&&result.survivors>=3;
