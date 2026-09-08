@@ -19,7 +19,7 @@ with sync_playwright() as p:
  page.get_by_role('button',name='Pause flight').click();assert page.locator('.thumb-controls').is_hidden();page.locator('.pause-card button').click();assert page.locator('.thumb-controls').is_visible()
  # Service worker contains the whole app, including art, sounds and recovery scene.
  page.evaluate('navigator.serviceWorker.ready');page.wait_for_function('navigator.serviceWorker.controller!==null')
- assets=page.evaluate("caches.open('six-down-06').then(c=>c.keys()).then(r=>r.map(x=>x.url))")
+ assets=page.evaluate("caches.open('six-down-07').then(c=>c.keys()).then(r=>r.map(x=>x.url))")
  assert any('hugin.glb' in a for a in assets) and any('icon-512' in a for a in assets)
  page.context.set_offline(True);page.goto('http://localhost:8001/landing/?mode=classic');page.get_by_role('button',name='BEGIN DESCENT').click();page.clock.run_for(100);assert page.locator('.cockpit').get_attribute('data-phase')=='flying'
  assert not errors,errors

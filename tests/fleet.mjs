@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createFleetDirector} from '../landing/fleet.js';
-function run(seed,pilot=false,take=false){
- const d=createFleetDirector(seed),s=d.state;s.phase='flying';let offered=false,taken=false;
+function run(seed,pilot=false,take=false,delay=0){
+ const d=createFleetDirector(seed),s=d.state;s.phase='flying';let offered=false,taken=false,offerAt=null;
  for(let i=0;i<24000&&s.phase!=='done';i++){
   const v=s.v,agl=v.y-s.terrain.height(v.x)-11.25,target=s.terrain.pads[s.selected]?.x??v.x;
   const targetVx=Math.max(-10,Math.min(10,(target-v.x)*.25)),limit=agl<35?.09:.38;
@@ -9,7 +9,7 @@ function run(seed,pilot=false,take=false){
   const turn=Math.max(-1,Math.min(1,(angle-v.angle)*5-v.angVel*2));
   const desiredSink=Math.min(40,Math.sqrt(Math.max(0,agl)*8)+1.2);
   d.step({thrust:pilot&&(-v.vy>desiredSink||agl<3&&v.vy<-1.5),turn:pilot?turn:0});
-  if(s.offer){offered=true;if(take){d.choose(true);taken=true;}}
+  if(s.offer){offered=true;offerAt??=s.time;if(take&&s.time-offerAt>=delay){d.choose(true);taken=true;}}
  }
  assert.equal(s.phase,'done',`seed ${seed} must finish`);assert.equal(s.landings.length,6);assert.equal(new Set(s.landings.map(r=>r.index)).size,6);
  return {result:d.result(),offered,taken,s};
@@ -45,3 +45,13 @@ assert(near.some(r=>r.padId<first.padId)&&near.some(r=>r.padId>first.padId),'Nei
 console.log('Hidden assignment, all six possible failures, and overlapping left/right touchdowns passed.');
 
 const steep=createFleetDirector(7).state.fleet;assert.equal(steep.filter(u=>u.entryOffset===0).length,1);for(const u of steep)assert(Math.abs(u.v.vx/u.v.vy)<.45);console.log("Steep entries: five modest diagonals, one vertical; early handoff.");
+
+const delayed=run(7,true,true,10);
+assert(delayed.taken,'Ten-second decision window remains available');
+assert.equal(delayed.result.landings.filter(r=>r.control==='manual'&&r.outcome!=='wreck').length,2,'Late takeover still permits a safe rescue');
+const {finalApproachFrame}=await import('../landing/lander.js');
+const player={index:0,x:500,y:40};
+const pair=finalApproachFrame(player,[{v:{index:1,x:650,y:30},resolved:false},{v:{index:2,x:240,y:30},resolved:false}],390);
+assert.equal(pair.x,575);assert(pair.scale*22>40,'Mobile rocket exceeds 40 pixels at final approach');
+assert.equal(finalApproachFrame(player,[{v:{index:1,x:1000,y:30},resolved:true}],390).x,500,'Distant craft cannot pull the camera away');
+console.log('Close mobile framing and successful rescue after a ten-second decision passed.');

@@ -97,7 +97,7 @@ The published root opens HECTIC FLEET 05. Classic is available at `landing/?mode
 
 All six start under automatic guidance. The initial fleet-wide view reveals no player assignment or selected sector. After 3.5–4.5 seconds of flight, a randomly chosen controller fails; an orange CRT alert and warning sounds announce manual override, and the camera focuses on that craft. Its position, velocity, orientation and fuel are preserved at takeover. Any of the six vehicle IDs can fail; its destination has neighbouring corridors on both sides.
 
-Four other boosters target a shared arrival window, typically within seconds of a clean manual landing. The last booster follows several seconds later. Healthy automatic units retain independent 90% success chances. A successful first manual landing offers a brief optional takeover of the remaining damaged unit; without intervention its success chance is 50%. The offer never pauses the fleet, and expires before touchdown. Esc pauses everything.
+Four other boosters target a shared arrival window, typically within seconds of a clean manual landing. The last booster starts higher and follows the main wave 24–27 seconds later. Healthy automatic units retain independent 90% success chances. A successful first manual landing offers up to 12 seconds to choose an optional takeover of the remaining damaged unit; without intervention its success chance is 50%. The offer never pauses the fleet, and expires with at least 15 seconds of scheduled approach remaining. Esc pauses everything.
 
 Automatic approaches use continuous diagonal braking arcs with no lateral reversals and at most 4.5 m/s² lateral deceleration, easing into unique, shuffled safe sectors. Automatic trajectories are a cinematic guidance model; manual flight uses the game's physics. During manual control, the view retains enough horizontal space for neighbouring landings. Completion waits for all six outcomes and wreck settling.
 
@@ -107,7 +107,7 @@ Both modes use the user-supplied `yodguard-warning_low-2-540185.mp3` (`handoff.m
 
 `node tests/fleet.mjs` checks complete/deterministic runs, optional rescue, probability outcomes, smooth braking, hidden initial assignment, all six possible failures, and nearby touchdowns on both sides of the player. `tests/fleet-browser.py` checks observation, CRT/audio handoff, takeover, pause, completion and replay.
 
-Fleet 05 accelerates the atmospheric establishing shot to about 1.2 seconds, followed by an early controller failure. Entry sink speed is 1.7 × height / arrival time (roughly 30–40 m/s). Five vehicles have modest diagonal drift, with one vertical approach. Plasma expires 2.8 seconds into flight and does not restart on takeover. Automatic touchdowns cluster around the manual landing, with the optional final unit a few seconds behind.
+Fleet 05 accelerates the atmospheric establishing shot to about 1.2 seconds, followed by an early controller failure. Entry sink speed is 1.7 × height / arrival time (roughly 30–40 m/s). Five vehicles have modest diagonal drift, with one vertical approach. Plasma expires 2.8 seconds into flight and does not restart on takeover. Automatic touchdowns cluster around the manual landing, with the optional final unit now deliberately delayed in Fleet 07.
 
 ## Mobile app / Fleet 06
 
@@ -118,3 +118,7 @@ The mobile HUD retains altitude, sink rate and fuel; sectors are shown on demand
 Use INSTALL APP on the briefing. Supported browsers show their native install prompt; Safari receives Add to Home Screen instructions. The app manifest supplies standalone presentation and 192/512 px maskable icons plus an Apple touch icon. A root-scoped service worker precaches the complete game, including audio and the 3D recovery model, for offline play after the first successful online cache fill. Updates wait until the player chooses UPDATE READY · RELOAD on the briefing; active flights are not automatically reloaded.
 
 For future releases, bump the cache version in `sw.js` and refresh its ASSETS list when adding/removing runtime files. All requests are scoped to this repository's URL. Only this app's old caches are removed. Verification: `tests/mobile-pwa.py` checks short-window CTA visibility, portrait/landscape layouts, real simultaneous touch input, independent release, pause reset, asset caching and offline startup. Browser emulation does not substitute for a physical iOS/Android device check.
+
+## Final approach / Fleet 07
+
+Below 130 metres the camera tightens around the controlled booster and its nearest nearby neighbour, prioritising readable craft size on mobile. Distant vehicles no longer hold the camera wide. Reduced-motion mode switches framing without an animated zoom. The final unit starts higher and arrives 24–27 seconds behind the main wave, leaving time for the takeover decision and a controllable descent.

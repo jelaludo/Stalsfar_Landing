@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#060e14"><title>HECTIC FLEET 06 · Six Down</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Six Down"><link rel="stylesheet" href="./style.css?v=hectic06"></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#060e14"><title>HECTIC FLEET 07 · Six Down</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/icon-192.png"><link rel="apple-touch-icon" href="./icons/icon-180.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Six Down"><link rel="stylesheet" href="./style.css?v=hectic07"></head><body>
 <canvas tabindex="0" aria-label="HUGIN landing field. Hold Space, W or up arrow to thrust; release to cut. Esc pauses; A and D or arrows rotate. Select a landing site with 1 to 7. L deploys legs."></canvas>
 <script type="module">
 import './pwa.js';
-import {runLandingIntro} from './lander.js?v=hectic06';
+import {runLandingIntro} from './lander.js?v=hectic07';
 const canvas=document.querySelector('canvas');
 let recoveryAbort;
 
@@ -11,7 +11,7 @@ async function begin(){
  recoveryAbort?.abort();
  document.querySelector('.summary')?.remove();
  const params=new URLSearchParams(location.search);
- document.title=params.get('mode')==='classic'?'CLASSIC · Six Down':'HECTIC FLEET 06 · Six Down';
+ document.title=params.get('mode')==='classic'?'CLASSIC · Six Down':'HECTIC FLEET 07 · Six Down';
  const result=await runLandingIntro(canvas,{seed:params.get('seed')||(params.get('mode')!=='classic'?crypto.getRandomValues(new Uint32Array(1))[0]:20260907),mode:params.get('mode')||'fleet',entries:6});
  const panel=document.createElement('main');panel.className='summary';
  const celebration=result.status==='completed'&&result.survivors>=3;

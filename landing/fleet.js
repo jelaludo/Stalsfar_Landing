@@ -16,8 +16,8 @@ export function createFleetDirector(seed,assists={}){
  const waveTime=22+rng.random()*1.5;
  s.mode='fleet';s.controlled=null;s.firstManual=manual;s.lastUnit=lastUnit;s.failureAt=3.5+rng.random();s.failureTriggered=false;s.offer=null;s.noticeUntil=0;s.fleet=[];
  for(let i=0;i<6;i++){
-  const pad=t.pads[assignments[i]],v=createVehicle(t,i,160),duration=i===lastUnit?waveTime+5+rng.random()*1.5:i===manual?waveTime+(rng.random()-.5)*2:waveTime-2+(rng.random()-.5)*3;
-  const height=430+rng.random()*45,entrySink=1.7*height/duration;
+  const pad=t.pads[assignments[i]],v=createVehicle(t,i,160),duration=i===lastUnit?waveTime+24+rng.random()*3:i===manual?waveTime+(rng.random()-.5)*2:waveTime-2+(rng.random()-.5)*3;
+  const height=(i===lastUnit?650:430)+rng.random()*45,entrySink=1.7*height/duration;
   Object.assign(v,{x:pad.x,y:pad.y+11.25+height,vx:0,vy:-entrySink,angle:0,angVel:0});
   s.fleet.push({v,pad,duration,height,entrySink,success:rng.random()<(i===lastUnit?.5:.9),manual:false,resolved:false});
  }
@@ -39,7 +39,7 @@ export function createFleetDirector(seed,assists={}){
   events.push({type:'contact',result:r,manual:unit.manual});
   if(unit.v.index===s.controlled){
    s.controlled=null;s.noticeUntil=0;s.verdict=`H-${unit.v.index+1} / ${r.outcome.toUpperCase()}`;
-   if(unit.v.index===manual&&r.outcome!=='wreck'&&!s.fleet[lastUnit].resolved){s.offer={until:Math.min(s.time+7,s.fleet[lastUnit].duration-3)};events.push({type:'damaged'});}
+   if(unit.v.index===manual&&r.outcome!=='wreck'&&!s.fleet[lastUnit].resolved){s.offer={until:Math.min(s.time+12,s.fleet[lastUnit].duration-15)};events.push({type:'damaged'});}
   }
  };
  const choose=take=>{
