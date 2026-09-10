@@ -2,6 +2,7 @@ import { createTouchPilot } from './touch-pilot.js';
 import { createLandingAudio } from './audio.js';
 import { createFleetDirector } from './fleet.js?v=hectic07';
 import { createLaunchPlume } from './launch-plume.js';
+import { createStarshipIntro, openingVariant } from './starship-intro.js';
 // Six Down — a standalone 2D landing experiment. Model by jelaludo.
 export const CONFIG = {
   sim: { dt: 1 / 120, maxSteps: 8, gravity: 3.2, drag: 0.0016 }, // Seconds; catch-up bound; m/s²; thin atmosphere.
@@ -317,7 +318,7 @@ function createView(canvas,ui,director) {
  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Canvas2D unavailable');
  
  const {state,wind}=director,t=state.terrain,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
- let launchEffect=!reduced&&state.phase==='opening'?createLaunchPlume(ui):null;
+ let launchEffect=!reduced&&state.phase==='opening'?(state.openingVariant==='starship'?createStarshipIntro(ui):createLaunchPlume(ui)):null;
  if(state.phase==='opening'&&!launchEffect)state.phase='ready';
  let width=0,height=0,dpr=1,camX=700,camY=320,scale=1,lastIndex=-1,sprites=null,atlas=null;
  let fps=60,debug=false,lastHud=0,prediction=null,playCenter=350,playBottom=600;
@@ -504,7 +505,7 @@ export function runLandingIntro(canvas,options={}) {
   try {
    sounds=createLandingAudio(abort.signal);
    director=options.mode==='fleet'?createFleetDirector(options.seed??Date.now(),options.assists):createDirector(options.seed??20260907,options.entries??6,options.assists);const {state}=director;
-   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;state.phase=reduced?'ready':'opening';
+   const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;state.phase=reduced?'ready':'opening';state.openingVariant=openingVariant();
    ui=document.createElement('div');ui.className='cockpit';
    ui.innerHTML=`<span class="build-badge">${state.mode==='fleet'?'HECTIC FLEET 07 · SIMULTANEOUS':'CLASSIC · SEQUENTIAL'}</span><header class="masthead"><a class="wordmark" href="./">STÅLSFÄR<span>ENTRY OPERATIONS</span></a><div class="run-id">SECTOR 07 / HUGIN RECOVERY<br><span>LOCAL FLIGHT EXPERIMENT · 2D</span></div><div class="header-actions"><button data-action="pause" aria-label="Pause flight">Ⅱ <span>PAUSE</span></button><button data-action="settings" aria-expanded="false">ASSISTS</button><button data-action="skip">SKIP ↗</button></div></header>
     <section class="mission"><div><span class="eyebrow">VEHICLE</span><strong data-read="entry">01 / 06</strong></div><div class="mission-detail"><span class="eyebrow" data-read="phase">AWAITING ENTRY</span><span data-read="queue">NEXT ENTRY IN 18s</span></div><div class="mission-end"><span class="eyebrow">MISSION TIME</span><span data-read="clock">00:00</span></div></section>
@@ -518,7 +519,9 @@ export function runLandingIntro(canvas,options={}) {
     <div class="instruments"><div class="instrument"><span class="eyebrow">ALTITUDE AGL</span><strong data-read="alt">460</strong><small>METRES</small></div><div class="instrument"><span class="eyebrow">SINK RATE</span><strong data-read="sink">38.0</strong><small>M/S <span class="muted">· LIMIT 6</span></small><div class="meter"><i data-sink></i></div></div><div class="instrument"><span class="eyebrow">LATERAL</span><strong data-read="drift">→ 0.0</strong><small>M/S <span class="muted">· LIMIT 4</span></small><div class="meter"><i data-drift></i></div></div><div class="instrument fuel"><span class="eyebrow">PROPELLANT</span><strong data-read="fuel">13.8</strong><small>SECONDS OF FULL BURN</small><div class="meter"><i data-fuel></i></div></div><div class="instrument secondary"><span class="eyebrow">ATTITUDE / SLOPE</span><strong class="small"><span data-read="tilt">0.0°</span> / <span data-read="slope">0.0°</span></strong><small data-read="legs">STOWED</small><small>WIND <span data-read="wind">→ 0.00 m/s²</span></small></div></div>
     <div class="control-strip"><span><kbd>SPACE / W / ↑</kbd> HOLD THRUST <kbd>A D / ← →</kbd> TILT <kbd>L</kbd> LEGS <kbd>O</kbd> RETROGRADE <kbd>ESC</kbd> PAUSE</span><span>MODEL BY <a href="https://jelaludo.github.io/SentryTowers_A6/" target="_blank" rel="noreferrer">JELALUDO</a></span></div>
     <div class="touch-controls"><button data-hold="left" aria-label="Rotate left">↶</button><button data-hold="right" aria-label="Rotate right">↷</button><button data-action="legs">LEGS</button><button data-action="orient">ALIGN</button><button data-hold="thrust">HOLD TO BURN ↑</button></div></footer><div class="thumb-controls" hidden><div class="thumb-stick" hidden aria-hidden="true"><i></i></div><span class="steer-hint">TOUCH + DRAG TO STEER</span><div class="thumb-tools"><button data-action="sectors">SECTORS</button><button data-action="legs">LEGS</button></div><button class="thumb-boost" data-hold="thrust" aria-label="Hold boost">BOOST<span>HOLD</span></button></div><span class="sr-only" aria-live="polite" data-read="callout"></span>`;
-   canvas.insertAdjacentElement('afterend',ui);view=createView(canvas,ui,director);
+   canvas.insertAdjacentElement('afterend',ui);ui.dataset.intro=state.openingVariant;
+   if(state.openingVariant==='starship'){const credit=ui.querySelector('.shader-credit');credit.href='https://github.com/pulkitxm/claude-directory/tree/main/shaders/starship-shader';credit.textContent='STARSHIP · XORDEV / PULKIT · MIT';}
+   view=createView(canvas,ui,director);
    for(const input of ui.querySelectorAll('[data-assist]'))input.checked=state.assists[input.dataset.assist];
    const on=(el,type,handler)=>el.addEventListener(type,handler,{signal:abort.signal});
    const clearInputs=()=>{touchPilot?.reset();sounds.thrust(false);keys.clear();touch.clear();ui.querySelectorAll('.held').forEach(b=>b.classList.remove('held'));};
@@ -527,7 +530,7 @@ export function runLandingIntro(canvas,options={}) {
     const cinematic=state.phase==='opening'||state.phase==='arrival';ui.classList.toggle('is-cinematic',cinematic);ui.dataset.phase=state.phase;
     ui.querySelector('.start-card').hidden=state.phase!=='ready';
     ui.querySelector('.thumb-controls').hidden=paused||state.phase!=='flying'||state.mode==='fleet'&&state.controlled===null;ui.querySelector('.cinematic-plate').hidden=!cinematic;
-    ui.querySelector('[data-cinematic-title]').textContent=state.phase==='opening'?'HUGIN / EXHAUST SIGNATURE':'HUGIN / ATMOSPHERIC ENTRY';
+    ui.querySelector('[data-cinematic-title]').textContent=state.phase==='opening'?(state.openingVariant==='starship'?'HUGIN / SIX-STARSHIP DEPARTURE':'HUGIN / EXHAUST SIGNATURE'):'HUGIN / ATMOSPHERIC ENTRY';
    };syncPhase();
    const setPause=value=>{paused=value;sounds.pause(value);clearInputs();syncPhase();ui.querySelector('[data-action="skip-cinematic"]').disabled=value;updateHud(ui,director,null);ui.querySelector('.pause-card').hidden=!paused||skipPending;ui.querySelector('[data-action="pause"]').setAttribute('aria-label',paused?'Resume flight':'Pause flight');};
    const action=name=>{
